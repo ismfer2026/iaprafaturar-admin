@@ -1,33 +1,42 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import type { Admin } from '../lib/auth'
-import { signIn as authSignIn, signOut as authSignOut, getCurrentAdmin, onAuthStateChange } from '../lib/auth'
+import { signIn as authSignIn, signOut as authSignOut, getCurrentAdmin } from '../lib/auth'
 import { AuthContext } from './AuthContextType'
+import { supabase } from '../lib/supabase'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [admin, setAdmin] = useState<Admin | null>(null)
   const [loading, setLoading] = useState(true)
+  const initialized = useRef(false)
 
   useEffect(() => {
-    // Verifica se há sessão ativa ao montar
-    getCurrentAdmin()
-      .then((currentAdmin) => {
-        setAdmin(currentAdmin)
-        setLoading(false)
-      })
-      .catch((error) => {
-        console.error('Erro ao carregar admin:', error)
-        setLoading(false)
-      })
+    if (initialized.current) return
+    initialized.current = true
 
-    // Inscreve-se a mudanças no estado de autenticação
-    onAuthStateChange((currentAdmin) => {
+    // Verifica sessão inicial
+    getCurrentAdmin().then((currentAdmin) => {
       setAdmin(currentAdmin)
+      setLoading(false)
+    }).catch(() => {
+      setLoading(false)
     })
+
+    // Escuta mudanças de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_OUT') {
+        setAdmin(null)
+      } else if (event === 'SIGNED_IN') {
+        const currentAdmin = await getCurrentAdmin()
+        setAdmin(currentAdmin)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const handleSignIn = async (email: string, password: string) => {
-    const admin = await authSignIn(email, password)
-    setAdmin(admin)
+    const result = await authSignIn(email, password)
+    setAdmin(result)
   }
 
   const handleSignOut = async () => {

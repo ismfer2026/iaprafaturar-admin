@@ -1,46 +1,32 @@
 import { useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+
+const pageTitles: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/profissionais': 'Profissionais',
+  '/planos': 'Planos',
+  '/embaixadores': 'Embaixadores',
+  '/agentes': 'Agentes de Sistema',
+  '/campanhas': 'Campanhas',
+  '/metricas': 'Métricas',
+}
 
 export function Header() {
   const location = useLocation()
-  const [currentTime, setCurrentTime] = useState(new Date())
+  const title = pageTitles[location.pathname] || 'Admin'
 
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const getPageTitle = () => {
-    const titles: Record<string, string> = {
-      '/dashboard': 'Dashboard',
-      '/profissionais': 'Profissionais',
-      '/planos': 'Planos',
-      '/embaixadores': 'Embaixadores',
-      '/agentes': 'Agentes de Sistema',
-      '/campanhas': 'Campanhas',
-      '/metricas': 'Métricas',
-    }
-    return titles[location.pathname] || 'Página'
-  }
-
-  const formatDate = () =>
-    currentTime.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+  const now = new Date().toLocaleDateString('pt-BR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
 
   return (
-    <header className="fixed top-0 left-64 right-0 z-40 h-16 bg-white border-b border-slate-200 shadow-sm">
-      <div className="h-full flex items-center justify-between px-6">
-        <h1 className="text-xl md:text-2xl font-bold text-[#1A1A2E]">
-          {getPageTitle()}
-        </h1>
-        <p className="text-sm text-slate-600">{formatDate()}</p>
-      </div>
+    <header style={{
+      position: 'fixed', top: 0, left: 256, right: 0, zIndex: 40,
+      height: 64, background: '#fff', borderBottom: '1px solid #e2e8f0',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: '0 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    }}>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>{title}</h1>
+      <span style={{ fontSize: 13, color: '#94a3b8', textTransform: 'capitalize' }}>{now}</span>
     </header>
   )
 }
