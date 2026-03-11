@@ -6,7 +6,7 @@ export async function testSupabaseConnection() {
   try {
     // Test 1: Verificar conexão
     console.log('1️⃣ Testando conexão com Supabase...')
-    const { data: testData, error: testError } = await supabase
+    const { data: _, error: testError } = await supabase
       .from('master_admins')
       .select('count')
       .limit(1)

@@ -12,7 +12,6 @@ import {
 import { useAuth } from '../hooks/useAuth'
 
 const BRAND_TEAL = 'bg-[#0D6E6E]'
-const BRAND_TEAL_DARK_HOVER = 'hover:bg-[#094b4b]'
 
 export function Sidebar() {
   const location = useLocation()
