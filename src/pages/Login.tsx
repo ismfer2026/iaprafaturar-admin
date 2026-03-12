@@ -25,60 +25,109 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* Lado esquerdo */}
-      <div className="hidden lg:flex lg:w-1/2 bg-[#0D6E6E] flex-col items-center justify-center p-12">
-        <h1 className="text-5xl font-black text-white tracking-tight">iaprafaturar</h1>
-        <p className="mt-3 text-white/70 text-lg">Painel Administrativo</p>
-        <p className="mt-16 text-white/50 text-sm text-center max-w-xs">
-          Gestão inteligente da sua plataforma de CRM clínico.
-        </p>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+
+      {/* Lado esquerdo — teal */}
+      <div style={{
+        flex: 1, background: 'linear-gradient(145deg, #0D6E6E 0%, #094b4b 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: 48,
+      }}>
+        <div style={{ textAlign: 'center', maxWidth: 360 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 16 }}>
+            <span style={{ fontSize: 36, fontWeight: 900, color: '#fff', letterSpacing: '-1px' }}>iaprafaturar</span>
+            <span style={{ background: '#F4A623', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 6 }}>Admin</span>
+          </div>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, margin: 0 }}>
+            Painel de controle da plataforma
+          </p>
+
+          <div style={{ marginTop: 64, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {[
+              { icon: '📊', text: 'Métricas financeiras em tempo real' },
+              { icon: '👥', text: 'Gestão de profissionais e planos' },
+              { icon: '🤖', text: 'Controle de agentes de IA' },
+              { icon: '🏆', text: 'Programa de embaixadores' },
+            ].map(({ icon, text }) => (
+              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
+                <span style={{ fontSize: 22 }}>{icon}</span>
+                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>{text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Lado direito */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white p-8">
-        <div className="w-full max-w-md">
-          <h2 className="text-2xl font-bold text-[#1A1A2E] mb-1">Bem-vindo de volta</h2>
-          <p className="text-slate-500 text-sm mb-8">Entre com suas credenciais para acessar o painel</p>
+      {/* Lado direito — formulário */}
+      <div style={{
+        width: 480, background: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48,
+      }}>
+        <div style={{ width: '100%', maxWidth: 360 }}>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1A1A2E', margin: '0 0 6px' }}>Bem-vindo de volta</h2>
+          <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 36px' }}>
+            Entre com suas credenciais para acessar o painel
+          </p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email</label>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D6E6E] focus:border-transparent"
+                style={{
+                  width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                  borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                  transition: 'border-color 0.2s',
+                }}
+                onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Senha</label>
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D6E6E] focus:border-transparent"
+                style={{
+                  width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                  borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                }}
+                onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
               />
             </div>
 
             {error && (
-              <p className="text-red-600 text-sm">{error}</p>
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
+                {error}
+              </div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#0D6E6E] text-white font-bold py-2.5 rounded-lg hover:bg-[#094b4b] transition-colors disabled:opacity-50"
+              style={{
+                width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
+                color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
+                borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'background 0.2s', marginTop: 4,
+              }}
+              onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
+              onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
             >
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-slate-400">
+          <p style={{ marginTop: 32, textAlign: 'center', fontSize: 12, color: '#cbd5e1' }}>
             Acesso restrito apenas para administradores convidados.
           </p>
         </div>
