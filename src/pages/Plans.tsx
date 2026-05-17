@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
-import { Plus, Edit2, Users, ToggleLeft, ToggleRight, X, Check, ChevronDown, ChevronUp, Calculator, AlertTriangle } from 'lucide-react'
-import { useMemo } from 'react'
+import { Plus, Edit2, Users, ToggleLeft, ToggleRight, X, Check, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 
 // ══════════════════════════════════════════════════════════
 // TIPOS
 // ══════════════════════════════════════════════════════════
 interface Plan {
   id: string; slug: string; name: string; description: string
-  monthly_price: number; annual_price: number; is_active: boolean; is_featured: boolean
+  price_monthly: number; price_annual: number; is_active: boolean; is_featured: boolean
   trial_days: number; max_professionals: number; max_patients: number
   max_appointments_month: number; ai_credits_month: number; features: string[]
   subscribers_count?: number; mrr_contribution?: number
@@ -34,17 +33,23 @@ interface Premissas {
 // CONSTANTES
 // ══════════════════════════════════════════════════════════
 const EMPTY_PLAN = {
-  slug: '', name: '', description: '', monthly_price: 0, annual_price: 0,
+  slug: '', name: '', description: '', price_monthly: 0, price_annual: 0,
   is_active: true, is_featured: false, trial_days: 0, max_professionals: 1,
-  max_patients: -1, max_appointments_month: -1, ai_credits_month: 0, features: [],
+  max_patients: -1, max_appointments_month: -1, ai_credits_month: 0, features:[],
 }
+
+// Mapeamento tolerante para aceitar tanto os nomes antigos quanto os novos
 const PLAN_COLORS: Record<string, { bg: string; color: string; border: string }> = {
-  trial:   { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
-  solo:    { bg: '#f0fdfa', color: '#0D6E6E', border: '#99f6e4' },
-  pro:     { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
-  clinica: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+  trial:       { bg: '#f8fafc', color: '#64748b', border: '#e2e8f0' },
+  solo:        { bg: '#f0fdfa', color: '#0D6E6E', border: '#99f6e4' },
+  essencial:   { bg: '#f0fdfa', color: '#0D6E6E', border: '#99f6e4' },
+  pro:         { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
+  estrategico: { bg: '#f5f3ff', color: '#7c3aed', border: '#ddd6fe' },
+  clinica:     { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+  performance: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
+  enterprise:  { bg: '#f0f9ff', color: '#0369a1', border: '#bae6fd' },
 }
-const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
+const MESES =['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 const DEFAULT_CUSTOS: Custos = {
   supabase: 119, netlify: 99, dominio: 15, github: 19, email: 49, monitoramento: 29,
   whatsappPorMsg: 0.04, msgsPorUsuario: 80, iaPorMilTokens: 3.50, tokensPorUsuario: 50,
@@ -59,7 +64,7 @@ const DEFAULT_PREMISSAS: Premissas = {
 // HELPERS UI
 // ══════════════════════════════════════════════════════════
 function getClr(slug: string) {
-  return PLAN_COLORS[slug] ?? { bg: '#f8fafc', color: '#0D6E6E', border: '#e2e8f0' }
+  return PLAN_COLORS[slug?.toLowerCase()] ?? { bg: '#f8fafc', color: '#0D6E6E', border: '#e2e8f0' }
 }
 function fmtBRL(v: number, decimals = 0) {
   return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`
@@ -111,11 +116,10 @@ function AccordionSection({ title, id, open, onToggle, children }: any) {
 // CALCULADORA FINANCEIRA
 // ══════════════════════════════════════════════════════════
 function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
-  const [custos, setCustos] = useState<Custos>(DEFAULT_CUSTOS)
-  const [planos, setPlanos] = useState<Planos>(planoPrecos)
-  const [premissas, setPremissas] = useState<Premissas>(DEFAULT_PREMISSAS)
-  const [openSection, setOpenSection] = useState<string>('custos')
-  const [newFeature] = useState('')
+  const[custos, setCustos] = useState<Custos>(DEFAULT_CUSTOS)
+  const[planos, setPlanos] = useState<Planos>(planoPrecos)
+  const[premissas, setPremissas] = useState<Premissas>(DEFAULT_PREMISSAS)
+  const[openSection, setOpenSection] = useState<string>('custos')
   const toggle = (s: string) => setOpenSection(p => p === s ? '' : s)
 
   const calc = useMemo(() => {
@@ -160,7 +164,7 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
     return { fixo, cvTotal, cvWhatsapp, cvIA, margemSolo, margemPro, margemClinica,
       margemPctSolo, margemPctPro, margemPctClinica, beSolo, bePro, beClinica,
       proj, mrrFinal, lucroFinal, mesToBreakeven, precoMinimo, beIdx }
-  }, [custos, planos, premissas])
+  },[custos, planos, premissas])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -169,7 +173,7 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
       <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 10 }}>
         <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0, marginTop: 1 }} />
         <p style={{ fontSize: 12, color: '#78350f', margin: 0 }}>
-          Ajuste os valores em azul para simular diferentes cenários. Os preços dos planos refletem os valores cadastrados no banco — sincronize manualmente se mudar aqui.
+          Ajuste os valores em azul para simular diferentes cenários. Os preços da calculadora refletem o banco.
         </p>
       </div>
 
@@ -227,9 +231,9 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {([
-              { key: 'solo', label: '🥉 Solo', color: '#0D6E6E', bg: '#f0fdfa', margem: calc.margemSolo, margemPct: calc.margemPctSolo, be: calc.beSolo },
-              { key: 'pro', label: '⭐ Pro', color: '#7c3aed', bg: '#f5f3ff', margem: calc.margemPro, margemPct: calc.margemPctPro, be: calc.bePro },
-              { key: 'clinica', label: '🏥 Clínica', color: '#d97706', bg: '#fffbeb', margem: calc.margemClinica, margemPct: calc.margemPctClinica, be: calc.beClinica },
+              { key: 'solo', label: '🥉 Essencial', color: '#0D6E6E', bg: '#f0fdfa', margem: calc.margemSolo, margemPct: calc.margemPctSolo, be: calc.beSolo },
+              { key: 'pro', label: '⭐ Estratégico', color: '#7c3aed', bg: '#f5f3ff', margem: calc.margemPro, margemPct: calc.margemPctPro, be: calc.bePro },
+              { key: 'clinica', label: '🏥 Performance', color: '#d97706', bg: '#fffbeb', margem: calc.margemClinica, margemPct: calc.margemPctClinica, be: calc.beClinica },
             ] as any[]).map(({ key, label, color, bg, margem, margemPct, be }) => (
               <div key={key} style={{ background: bg, borderRadius: 12, padding: 16, border: `1px solid ${color}33` }}>
                 <p style={{ fontSize: 14, fontWeight: 800, color, margin: '0 0 12px' }}>{label}</p>
@@ -262,9 +266,9 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
             <InputCalc label="Novos cadastros/mês" value={premissas.novosPorMes} onChange={(v: number) => setPremissas(p => ({ ...p, novosPorMes: v }))} suffix="usuários" note="Cresce 5%/mês automaticamente" />
             <InputCalc label="Churn mensal" value={premissas.churnMensal * 100} onChange={(v: number) => setPremissas(p => ({ ...p, churnMensal: v / 100 }))} suffix="%" step={0.1} />
             <InputCalc label="Conversão trial→pago" value={premissas.conversaoTrial * 100} onChange={(v: number) => setPremissas(p => ({ ...p, conversaoTrial: v / 100 }))} suffix="%" step={1} />
-            <InputCalc label="Mix Solo (%)" value={premissas.mixSolo * 100} onChange={(v: number) => setPremissas(p => ({ ...p, mixSolo: v / 100 }))} suffix="%" step={5} />
-            <InputCalc label="Mix Pro (%)" value={premissas.mixPro * 100} onChange={(v: number) => setPremissas(p => ({ ...p, mixPro: v / 100 }))} suffix="%" step={5} />
-            <InputCalc label="Mix Clínica (%)" value={premissas.mixClinica * 100} onChange={(v: number) => setPremissas(p => ({ ...p, mixClinica: v / 100 }))} suffix="%" step={5} />
+            <InputCalc label="Mix Essencial (%)" value={premissas.mixSolo * 100} onChange={(v: number) => setPremissas(p => ({ ...p, mixSolo: v / 100 }))} suffix="%" step={5} />
+            <InputCalc label="Mix Estratégico (%)" value={premissas.mixPro * 100} onChange={(v: number) => setPremissas(p => ({ ...p, mixPro: v / 100 }))} suffix="%" step={5} />
+            <InputCalc label="Mix Performance (%)" value={premissas.mixClinica * 100} onChange={(v: number) => setPremissas(p => ({ ...p, mixClinica: v / 100 }))} suffix="%" step={5} />
           </div>
 
           <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'auto' }}>
@@ -321,66 +325,125 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
 export function PlansPage() {
   const [activeTab, setActiveTab] = useState<'planos' | 'calculadora'>('planos')
   const [plans, setPlans] = useState<Plan[]>([])
-  const [loading, setLoading] = useState(true)
+  const[loading, setLoading] = useState(true)
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
-  const [subscribers, setSubscribers] = useState<Subscriber[]>([])
+  const[subscribers, setSubscribers] = useState<Subscriber[]>([])
   const [loadingSubs, setLoadingSubs] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editingPlan, setEditingPlan] = useState<Partial<Plan> | null>(null)
   const [saving, setSaving] = useState(false)
-  const [toggling, setToggling] = useState<string | null>(null)
-  const [newFeature, setNewFeature] = useState('')
+  const[toggling, setToggling] = useState<string | null>(null)
+  const [newFeature, setNewFeature] = useState('') 
 
-  useEffect(() => { fetchPlans() }, [])
+  useEffect(() => { fetchPlans() },[])
 
   const fetchPlans = async () => {
     setLoading(true)
     try {
-      const { data: plansData } = await supabase.from('plans').select('*').order('monthly_price', { ascending: true })
-      if (!plansData) { setLoading(false); return }
-      const { data: subs } = await supabase.from('professional_subscriptions').select('plan_id, monthly_price, status').eq('status', 'active')
+      console.log('📊 [Plans] Carregando planos...')
+
+      // 1. Busca os metadados dos planos (limites, preços configurados no banco)
+      const { data: plansData, error: plansError } = await supabase.from('plans').select('*')
+
+      if (plansError) {
+        console.error('❌ Erro ao buscar plans:', plansError)
+        throw plansError
+      }
+
+      console.log('✅ Plans carregado:', plansData?.length || 0, 'registros')
+      console.log('📋 Estrutura dos planos:', plansData?.[0])
+      if (!plansData) return
+
+      // 2. Conta assinaturas ativas por plan_id via professional_subscriptions
+      const { data: activeSubs } = await supabase
+        .from('professional_subscriptions')
+        .select('plan_id')
+        .eq('status', 'active')
+
       const subsMap: Record<string, { count: number; mrr: number }> = {}
-      subs?.forEach(s => {
-        if (!subsMap[s.plan_id]) subsMap[s.plan_id] = { count: 0, mrr: 0 }
-        subsMap[s.plan_id].count++
-        subsMap[s.plan_id].mrr += s.monthly_price || 0
+
+      activeSubs?.forEach(sub => {
+        const plan = plansData.find(p => p.id === sub.plan_id)
+        if (plan) {
+          if (!subsMap[plan.id]) subsMap[plan.id] = { count: 0, mrr: 0 }
+          subsMap[plan.id].count++
+          subsMap[plan.id].mrr += plan.price_monthly || 0
+        }
       })
-      setPlans(plansData.map(p => ({ ...p, features: Array.isArray(p.features) ? p.features : [], subscribers_count: subsMap[p.id]?.count || 0, mrr_contribution: subsMap[p.id]?.mrr || 0 })))
+
+      setPlans(plansData.map(p => ({ 
+        ...p, 
+        features: Array.isArray(p.features) ? p.features : [], 
+        subscribers_count: subsMap[p.id]?.count || 0, 
+        mrr_contribution: subsMap[p.id]?.mrr || 0 
+      })))
     } finally { setLoading(false) }
   }
 
   const fetchSubscribers = async (planId: string) => {
     setLoadingSubs(true)
     try {
-      const { data } = await supabase.from('professional_subscriptions').select('*').eq('plan_id', planId).order('started_at', { ascending: false }).limit(20)
-      if (!data) { setSubscribers([]); return }
-      const ids = data.map(s => s.professional_id).filter(Boolean)
-      const { data: profs } = await supabase.from('professionals').select('id, name, email').in('id', ids)
-      const map: Record<string, any> = {}
-      profs?.forEach(p => { map[p.id] = { name: p.name, email: p.email } })
-      setSubscribers(data.map(s => ({ ...s, professional: map[s.professional_id] })))
+      const plan = plans.find(p => p.id === planId)
+      if (!plan) return
+
+      // Busca assinaturas ativas deste plano via professional_subscriptions
+      const { data: subsData } = await supabase
+        .from('professional_subscriptions')
+        .select('id, status, billing_cycle, activated_at, professionals(id, name, email, business_name)')
+        .eq('plan_id', planId)
+        .eq('status', 'active')
+        .order('activated_at', { ascending: false })
+        .limit(20)
+
+      if (!subsData) { setSubscribers([]); return }
+
+      setSubscribers(subsData.map(s => ({
+        id: s.id,
+        professional_id: (s.professionals as any)?.id ?? '',
+        status: s.status,
+        billing_cycle: s.billing_cycle ?? 'mensal',
+        started_at: s.activated_at,
+        professional: {
+          name: (s.professionals as any)?.business_name || (s.professionals as any)?.name || 'Sem Nome',
+          email: (s.professionals as any)?.email ?? '',
+        }
+      })))
     } finally { setLoadingSubs(false) }
   }
 
   const togglePlan = async (plan: Plan) => {
     setToggling(plan.id)
     const newVal = !plan.is_active
-    await supabase.from('plans').update({ is_active: newVal }).eq('id', plan.id)
-    setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, is_active: newVal } : p))
-    if (selectedPlan?.id === plan.id) setSelectedPlan({ ...selectedPlan, is_active: newVal })
-    setToggling(null)
+    try {
+      const { error } = await supabase.from('plans').update({ is_active: newVal }).eq('id', plan.id)
+      if (error) throw error
+      setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, is_active: newVal } : p))
+      if (selectedPlan?.id === plan.id) setSelectedPlan({ ...selectedPlan, is_active: newVal })
+    } catch (e) {
+      console.error('Erro ao alterar plano:', e)
+    } finally {
+      setToggling(null)
+    }
   }
 
   const savePlan = async () => {
     if (!editingPlan) return
+    if (!editingPlan.name?.trim() || !editingPlan.slug?.trim()) {
+      console.error('Nome e slug são obrigatórios')
+      return
+    }
     setSaving(true)
     try {
       if (editingPlan.id) {
-        await supabase.from('plans').update({ ...editingPlan, updated_at: new Date().toISOString() }).eq('id', editingPlan.id)
+        const { error } = await supabase.from('plans').update({ ...editingPlan, updated_at: new Date().toISOString() }).eq('id', editingPlan.id)
+        if (error) throw error
       } else {
-        await supabase.from('plans').insert({ ...editingPlan })
+        const { error } = await supabase.from('plans').insert({ ...editingPlan })
+        if (error) throw error
       }
       setShowModal(false); setEditingPlan(null); await fetchPlans()
+    } catch (e) {
+      console.error('Erro ao salvar plano:', e)
     } finally { setSaving(false) }
   }
 
@@ -392,11 +455,11 @@ export function PlansPage() {
   const totalMRR  = plans.reduce((s, p) => s + (p.mrr_contribution || 0), 0)
   const totalSubs = plans.reduce((s, p) => s + (p.subscribers_count || 0), 0)
 
-  // Preços atuais dos planos para passar à calculadora
+  // Liga a calculadora aos preços dos planos Essencial, Estratégico e Performance
   const planoPrecos: Planos = {
-    solo:    plans.find(p => p.slug === 'solo')?.monthly_price    || 97,
-    pro:     plans.find(p => p.slug === 'pro')?.monthly_price     || 197,
-    clinica: plans.find(p => p.slug === 'clinica')?.monthly_price || 397,
+    solo:    plans.find(p => p.slug === 'essencial' || p.name === 'Essencial')?.price_monthly || 99.9,
+    pro:     plans.find(p => p.slug === 'estrategico' || p.name === 'Estratégico')?.price_monthly || 249.9,
+    clinica: plans.find(p => p.slug === 'performance' || p.name === 'Performance')?.price_monthly || 449.9,
   }
 
   return (
@@ -428,7 +491,7 @@ export function PlansPage() {
               { label: 'Total Assinantes', value: totalSubs, color: '#7c3aed', bg: '#f5f3ff' },
               { label: 'MRR Total', value: fmtBRL(totalMRR), color: '#16a34a', bg: '#f0fdf4' },
               { label: 'Ticket Médio', value: totalSubs > 0 ? fmtBRL(totalMRR / totalSubs) : '—', color: '#d97706', bg: '#fffbeb' },
-            ].map(({ label, value, color, bg }) => (
+            ].map(({ label, value, color }) => ( 
               <div key={label} style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '16px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
                 <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: '#64748b', margin: '0 0 6px' }}>{label}</p>
                 <p style={{ fontSize: 26, fontWeight: 900, color, margin: 0 }}>{value}</p>
@@ -460,6 +523,7 @@ export function PlansPage() {
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: clr.color }}>{plan.name}</h3>
+                            {plan.slug === 'enterprise' && <span style={{ background: '#0369a1', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>ENTERPRISE</span>}
                             {plan.is_featured && <span style={{ background: '#F4A623', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>DESTAQUE</span>}
                             {!plan.is_active && <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>INATIVO</span>}
                           </div>
@@ -478,23 +542,32 @@ export function PlansPage() {
                       </div>
 
                       <div style={{ display: 'flex', gap: 20, marginTop: 16 }}>
-                        <div>
-                          <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Mensal</p>
-                          <p style={{ fontSize: 22, fontWeight: 900, color: clr.color, margin: 0 }}>
-                            {plan.monthly_price === 0 ? 'Grátis' : fmtBRL(plan.monthly_price)}
-                          </p>
-                        </div>
-                        {plan.annual_price > 0 && (
+                        {plan.slug === 'enterprise' ? (
                           <div>
-                            <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Anual</p>
-                            <p style={{ fontSize: 22, fontWeight: 900, color: clr.color, margin: 0 }}>{fmtBRL(plan.annual_price)}</p>
+                            <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Preço</p>
+                            <p style={{ fontSize: 18, fontWeight: 900, color: clr.color, margin: 0 }}>Sob consulta</p>
                           </div>
-                        )}
-                        {plan.trial_days > 0 && (
-                          <div>
-                            <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Trial</p>
-                            <p style={{ fontSize: 22, fontWeight: 900, color: '#d97706', margin: 0 }}>{plan.trial_days}d</p>
-                          </div>
+                        ) : (
+                          <>
+                            <div>
+                              <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Mensal</p>
+                              <p style={{ fontSize: 22, fontWeight: 900, color: clr.color, margin: 0 }}>
+                                {plan.price_monthly === 0 ? 'Grátis' : fmtBRL(plan.price_monthly)}
+                              </p>
+                            </div>
+                            {plan.price_annual > 0 && (
+                              <div>
+                                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Anual</p>
+                                <p style={{ fontSize: 22, fontWeight: 900, color: clr.color, margin: 0 }}>{fmtBRL(plan.price_annual)}</p>
+                              </div>
+                            )}
+                            {plan.trial_days > 0 && (
+                              <div>
+                                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Trial</p>
+                                <p style={{ fontSize: 22, fontWeight: 900, color: '#d97706', margin: 0 }}>{plan.trial_days}d</p>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
@@ -515,10 +588,10 @@ export function PlansPage() {
 
                     <div style={{ padding: '14px 24px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                        {(plan.features || []).slice(0, 4).map((f, i) => (
+                        {(plan.features ||[]).slice(0, 4).map((f, i) => (
                           <span key={i} style={{ background: clr.bg, color: clr.color, fontSize: 11, padding: '3px 10px', borderRadius: 20, border: `1px solid ${clr.border}` }}>✓ {f}</span>
                         ))}
-                        {(plan.features || []).length > 4 && <span style={{ fontSize: 11, color: '#94a3b8' }}>+{plan.features.length - 4} mais</span>}
+                        {(plan.features ||[]).length > 4 && <span style={{ fontSize: 11, color: '#94a3b8' }}>+{plan.features.length - 4} mais</span>}
                       </div>
                       <button onClick={() => selectPlan(plan)}
                         style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: clr.color, fontSize: 13, fontWeight: 600, padding: 0 }}>
@@ -532,7 +605,7 @@ export function PlansPage() {
                         {loadingSubs ? (
                           <p style={{ fontSize: 13, color: '#94a3b8' }}>Carregando...</p>
                         ) : subscribers.length === 0 ? (
-                          <p style={{ fontSize: 13, color: '#94a3b8' }}>Nenhum assinante ainda.</p>
+                          <p style={{ fontSize: 13, color: '#94a3b8' }}>Nenhum assinante ativo neste plano no momento.</p>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
                             {subscribers.map(sub => (
@@ -543,7 +616,7 @@ export function PlansPage() {
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                   <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 12, background: sub.status === 'active' ? '#f0fdf4' : '#fef2f2', color: sub.status === 'active' ? '#16a34a' : '#dc2626' }}>
-                                    {sub.status}
+                                    {sub.status.toUpperCase()}
                                   </span>
                                   <p style={{ fontSize: 11, color: '#64748b', margin: '3px 0 0' }}>
                                     {sub.billing_cycle === 'annual' ? 'Anual' : 'Mensal'} · desde {new Date(sub.started_at).toLocaleDateString('pt-BR')}
@@ -579,12 +652,12 @@ export function PlansPage() {
             <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 {[
-                  { label: 'Nome do plano', key: 'name', type: 'text', placeholder: 'Ex: Solo' },
-                  { label: 'Slug', key: 'slug', type: 'text', placeholder: 'Ex: solo' },
-                  { label: 'Preço Mensal (R$)', key: 'monthly_price', type: 'number', placeholder: '97' },
-                  { label: 'Preço Anual (R$)', key: 'annual_price', type: 'number', placeholder: '970' },
-                  { label: 'Dias de Trial', key: 'trial_days', type: 'number', placeholder: '30' },
-                  { label: 'Créditos IA/mês (-1=∞)', key: 'ai_credits_month', type: 'number', placeholder: '300' },
+                  { label: 'Nome do plano', key: 'name', type: 'text', placeholder: 'Ex: Essencial' },
+                  { label: 'Slug', key: 'slug', type: 'text', placeholder: 'Ex: essencial' },
+                  { label: 'Preço Mensal (R$)', key: 'price_monthly', type: 'number', placeholder: '99.90' },
+                  { label: 'Preço Anual (R$)', key: 'price_annual', type: 'number', placeholder: '990' },
+                  { label: 'Dias de Trial', key: 'trial_days', type: 'number', placeholder: '7' },
+                  { label: 'Créditos IA/mês (-1=∞)', key: 'ai_credits_month', type: 'number', placeholder: '100' },
                   { label: 'Máx. Profissionais', key: 'max_professionals', type: 'number', placeholder: '1' },
                   { label: 'Máx. Pacientes (-1=∞)', key: 'max_patients', type: 'number', placeholder: '-1' },
                 ].map(({ label, key, type, placeholder }) => (
@@ -606,7 +679,7 @@ export function PlansPage() {
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Features incluídas</label>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input value={newFeature} onChange={e => setNewFeature(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && newFeature.trim()) { setEditingPlan(prev => ({ ...prev!, features: [...(prev!.features || []), newFeature.trim()] })); (e.target as HTMLInputElement).value = ''; } }}
+                    onKeyDown={e => { if (e.key === 'Enter' && newFeature.trim()) { setEditingPlan(prev => ({ ...prev!, features:[...(prev!.features || []), newFeature.trim()] })); (e.target as HTMLInputElement).value = ''; } }}
                     placeholder="Digite uma feature e pressione Enter..."
                     style={{ flex: 1, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none' }} />
                   <button onClick={() => { if (newFeature.trim()) setEditingPlan(prev => ({ ...prev!, features: [...(prev!.features || []), newFeature.trim()] })) }}
@@ -615,7 +688,7 @@ export function PlansPage() {
                   </button>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {(editingPlan.features || []).map((f, i) => (
+                  {(editingPlan.features ||[]).map((f, i) => (
                     <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#f0fdfa', color: '#0D6E6E', fontSize: 12, padding: '4px 10px', borderRadius: 20, border: '1px solid #99f6e4' }}>
                       {f}
                       <button onClick={() => setEditingPlan(prev => ({ ...prev!, features: prev!.features!.filter((_, j) => j !== i) }))}

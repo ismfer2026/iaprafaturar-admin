@@ -1,16 +1,73 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cbggntmqnulzdhpmying.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZ2dudG1xbnVsemRocG15aW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0Njk5MjUsImV4cCI6MjA4ODA0NTkyNX0.Ean-9TvMQaIoeJpO3VNwHt8ddwN8loj2C9lSa6uIcEM'
 
-console.log('Supabase URL:', supabaseUrl)
-console.log('Supabase Key:', supabaseAnonKey ? supabaseAnonKey.substring(0, 20) + '...' : 'UNDEFINED')
-
-if (!supabaseAnonKey) {
-  console.warn('VITE_SUPABASE_PUBLISHABLE_KEY ou VITE_SUPABASE_ANON_KEY não configurada. Configure em .env.local')
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Credenciais do Supabase não encontradas!')
 }
 
-export const supabase = createClient(
-  supabaseUrl,
-  supabaseAnonKey || 'placeholder-key-for-development',
-)
+// ─── Custom Fetch com Retry Automático ───
+const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
+  if (!headers) return {}
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries())
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers)
+  }
+  return Object.fromEntries(
+    Object.entries(headers)
+      .filter(([, value]) => value !== undefined)
+      .map(([key, value]) => [key, String(value)])
+  )
+}
+
+const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
+  const maxRetries = 2
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: normalizeHeaders(options?.headers),
+      })
+
+      if (!response.ok && response.status >= 500 && attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        continue
+      }
+
+      return response
+    } catch (error: any) {
+      lastError = error
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        continue
+      }
+    }
+  }
+
+  throw new Error(
+    lastError?.message || 'Falha ao conectar ao Supabase. Verifique sua conexão de internet.'
+  )
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: typeof window !== 'undefined' ? localStorage : undefined,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'implicit',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2,
+    },
+  },
+  global: {
+    fetch: customFetch,
+  },
+})

@@ -17,7 +17,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  if (!admin) {
+  if (!admin || !admin.is_active) {
     return <Navigate to="/login" replace />
   }
 

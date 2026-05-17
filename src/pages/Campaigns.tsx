@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import {
-  Plus, X, Play, Pause, Eye, Users, Send, ChevronDown, ChevronUp,
+  Plus, X, Play, Pause, Send, ChevronDown, ChevronUp,
   Zap, ShoppingBag, RefreshCw, BookOpen, TrendingUp, Target,
-  CheckCircle, Clock, AlertCircle, Settings, Filter
+  CheckCircle, Clock, Settings, Filter
 } from 'lucide-react'
 
 // ══════════════════════════════════════════════════════════
@@ -142,7 +142,7 @@ export function CampaignsPage() {
     setLoading(true)
     try {
       const { data: c } = await supabase.from('admin_campaigns').select('*').order('created_at', { ascending: false })
-      const { data: p } = await supabase.from('professionals').select('id, name, email, plan').limit(100)
+      const { data: p } = await supabase.from('professionals').select('id, name, email, plan_type').limit(100)
       setCampaigns((c || []).map(r => ({ ...r, stats: r.stats || { sent: 0, delivered: 0, replied: 0, converted: 0 } })))
       setProfessionals(p || [])
     } catch { setCampaigns([]); setProfessionals([]) } finally { setLoading(false) }
@@ -153,18 +153,27 @@ export function CampaignsPage() {
     setSaving(true)
     try {
       if (editing.id) {
-        await supabase.from('admin_campaigns').update({ ...editing, updated_at: new Date().toISOString() }).eq('id', editing.id)
+        const { error } = await supabase.from('admin_campaigns').update({ ...editing, updated_at: new Date().toISOString() }).eq('id', editing.id)
+        if (error) throw error
       } else {
-        await supabase.from('admin_campaigns').insert({ ...editing, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        const { error } = await supabase.from('admin_campaigns').insert({ ...editing, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        if (error) throw error
       }
       setShowModal(false); setEditing(null); await fetchAll()
+    } catch (e) {
+      console.error('Erro ao salvar campanha:', e)
     } finally { setSaving(false) }
   }
 
   const toggleStatus = async (c: Campaign) => {
     const next: CampaignStatus = c.status === 'active' ? 'paused' : c.status === 'paused' ? 'active' : 'active'
-    await supabase.from('admin_campaigns').update({ status: next, updated_at: new Date().toISOString() }).eq('id', c.id)
-    setCampaigns(prev => prev.map(x => x.id === c.id ? { ...x, status: next } : x))
+    try {
+      const { error } = await supabase.from('admin_campaigns').update({ status: next, updated_at: new Date().toISOString() }).eq('id', c.id)
+      if (error) throw error
+      setCampaigns(prev => prev.map(x => x.id === c.id ? { ...x, status: next } : x))
+    } catch (e) {
+      console.error('Erro ao alterar status da campanha:', e)
+    }
   }
 
   const openCreate = (template?: { name: string; message: string; audience: TargetAudience }, category?: CampaignCategory) => {
@@ -219,7 +228,7 @@ export function CampaignsPage() {
               { label: 'Total Enviados', value: totalSent.toLocaleString('pt-BR'), color: '#0D6E6E', bg: '#f0fdfa' },
               { label: 'Convertidos', value: totalConverted.toLocaleString('pt-BR'), color: '#7c3aed', bg: '#f5f3ff' },
               { label: 'Taxa de Conversão', value: `${convRate}%`, color: '#d97706', bg: '#fffbeb' },
-            ].map(({ label, value, color, bg }) => (
+            ].map(({ label, value, color }) => (
               <div key={label} style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '16px 20px' }}>
                 <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: '#64748b', margin: '0 0 6px' }}>{label}</p>
                 <p style={{ fontSize: 26, fontWeight: 900, color, margin: 0 }}>{value}</p>

@@ -103,7 +103,14 @@ export function MetricsPage() {
   const [triggering, setTriggering] = useState<string | null>(null)
   const [recalculating, setRecalculating] = useState(false)
 
-  useEffect(() => { fetchMetrics() }, [period])
+  useEffect(() => {
+    let isCurrent = true
+    const load = async () => {
+      if (isCurrent) await fetchMetrics()
+    }
+    load()
+    return () => { isCurrent = false }
+  }, [period])
   useEffect(() => { if (activeTab === 'health' && healthScores.length === 0) fetchHealthScores() }, [activeTab])
 
   useEffect(() => {
@@ -140,26 +147,29 @@ export function MetricsPage() {
         growthByMonth.push({ month: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), cadastros: cads || 0, conversoes: convs || 0 })
       }
 
-      const { data: activeSubs } = await supabase.from('professional_subscriptions').select('monthly_price, plan_id').eq('status', 'active')
-      const mrr = (activeSubs || []).reduce((s, x) => s + (x.monthly_price || 0), 0)
+      const { data: activeSubs } = await supabase.from('professional_subscriptions').select('plan_id, plans ( price_monthly, slug )').eq('status', 'active')
+      const mrr = (activeSubs || []).reduce((s, x) => s + ((x.plans as any)?.price_monthly || 0), 0)
       const { count: churnCount } = await supabase.from('subscription_history').select('id', { count: 'exact' }).eq('status', 'cancelled').gte('changed_at', start)
       const churnRate = totalProfs ? ((churnCount || 0) / (totalProfs || 1)) * 100 : 0
       const planCounts: Record<string, number> = {}
-      activeSubs?.forEach(s => { planCounts[s.plan_id] = (planCounts[s.plan_id] || 0) + (s.monthly_price || 0) })
+      activeSubs?.forEach(s => { const slug = (s.plans as any)?.slug || s.plan_id; planCounts[slug] = (planCounts[slug] || 0) + ((s.plans as any)?.price_monthly || 0) })
       const planNames: Record<string, string> = { solo: 'Solo', pro: 'Pro', clinic: 'Clínica', trial: 'Trial' }
-      const { data: ambassadorSubs } = await supabase.from('professional_subscriptions').select('monthly_price').eq('status', 'active').not('ambassador_id', 'is', null)
+      const { data: ambassadorSubs } = await supabase.from('professional_subscriptions').select('plans ( price_monthly )').eq('status', 'active').not('ambassador_id', 'is', null)
 
       const mrrHistory: any[] = []
       for (let i = 5; i >= 0; i--) {
         const d = new Date(); d.setMonth(d.getMonth() - i)
-        mrrHistory.push({ month: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), mrr: mrr * (0.7 + Math.random() * 0.35) })
+        const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).toISOString()
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString()
+        const { data: monthSubs } = await supabase.from('professional_subscriptions').select('plans ( price_monthly )').eq('status', 'active').gte('created_at', monthStart).lte('created_at', monthEnd)
+        const monthMRR = (monthSubs || []).reduce((s, x) => s + ((x.plans as any)?.price_monthly || 0), 0)
+        mrrHistory.push({ month: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }), mrr: monthMRR })
       }
-      mrrHistory[mrrHistory.length - 1].mrr = mrr
 
       const thisMonthStart = new Date(); thisMonthStart.setDate(1)
-      const { count: activeMonth } = await supabase.from('professionals').select('id', { count: 'exact' }).eq('is_active', true).gte('updated_at', thisMonthStart.toISOString())
+      const { count: activeMonth } = await supabase.from('professionals').select('id', { count: 'exact' }).gte('updated_at', thisMonthStart.toISOString())
       const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-      const { count: atRisk } = await supabase.from('professionals').select('id', { count: 'exact' }).eq('is_active', true).lt('updated_at', thirtyDaysAgo.toISOString())
+      const { count: atRisk } = await supabase.from('professionals').select('id', { count: 'exact' }).lt('updated_at', thirtyDaysAgo.toISOString())
 
       const { data: agentLogs } = await supabase.from('agent_logs').select('agent_slug, credits_consumed, created_at, status').gte('created_at', start)
       const agentStatsMap: Record<string, any> = {}
@@ -181,7 +191,7 @@ export function MetricsPage() {
         totalProfessionals: totalProfs || 0, growthByMonth,
         mrr, arr: mrr * 12, churnRate, ltv: churnRate > 0 ? mrr / (churnRate / 100) : 0,
         revenueByPlan: Object.entries(planCounts).map(([k, v]) => ({ name: planNames[k] || k, value: v })),
-        mrrHistory, ambassadorRevenue: (ambassadorSubs || []).reduce((s, x) => s + (x.monthly_price || 0), 0),
+        mrrHistory, ambassadorRevenue: (ambassadorSubs || []).reduce((s, x) => s + ((x.plans as any)?.price_monthly || 0), 0),
         activeThisMonth: activeMonth || 0, atRiskCount: atRisk || 0,
         retentionRate: totalProfs ? (((totalProfs || 0) - (churnCount || 0)) / (totalProfs || 1)) * 100 : 100,
         totalConversations: totalConvs, completionRate: totalConvs > 0 ? ((totalConvs - totalErrors) / totalConvs) * 100 : 0,
@@ -208,19 +218,26 @@ export function MetricsPage() {
   }
 
   const triggerReactivation = async (score: HealthScore) => {
+    if (!window.confirm(`Enviar mensagem de reativação para ${score.professional?.name || 'este profissional'}?`)) {
+      return
+    }
     setTriggering(score.id)
     try {
+      const { error: invokeError } = await supabase.functions.invoke('reativacao-agent', { body: { professional_id: score.professional_id, trigger: 'health_score', score: score.score } })
+      if (invokeError) throw invokeError
+
       await supabase.from('professional_health_scores').update({ reactivation_triggered: true, reactivation_triggered_at: new Date().toISOString() }).eq('id', score.id)
-      await supabase.functions.invoke('reativacao-agent', { body: { professional_id: score.professional_id, trigger: 'health_score', score: score.score } })
       setHealthScores(prev => prev.map(s => s.id === score.id ? { ...s, reactivation_triggered: true } : s))
       if (healthSelected?.id === score.id) setHealthSelected({ ...healthSelected, reactivation_triggered: true })
-    } catch (e) { console.error(e) } finally { setTriggering(null) }
+    } catch (e) {
+      console.error('Erro ao disparar reativação:', e)
+    } finally { setTriggering(null) }
   }
 
   const recalculateAll = async () => {
     setRecalculating(true)
     try {
-      const { data: profs } = await supabase.from('professionals').select('id').eq('is_active', true)
+      const { data: profs } = await supabase.from('professionals').select('id').eq('status', 'ativo')
       if (profs) for (const p of profs) await supabase.rpc('calculate_health_score', { p_professional_id: p.id })
       await fetchHealthScores()
     } catch (e) { console.error(e) } finally { setRecalculating(false) }
@@ -253,17 +270,34 @@ export function MetricsPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e2e8f0' }}>
+      <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e2e8f0' }}>
         {tabs.map(t => (
-          <button key={t.key} onClick={() => setActiveTab(t.key as Tab)} style={{ padding: '10px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', color: activeTab === t.key ? tabColors[t.key as Tab] : '#94a3b8', borderBottom: `2px solid ${activeTab === t.key ? tabColors[t.key as Tab] : 'transparent'}`, marginBottom: -1 }}>
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={activeTab === t.key}
+            aria-controls={`${t.key}-panel`}
+            onClick={() => setActiveTab(t.key as Tab)}
+            style={{
+              padding: '10px 20px',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              background: 'none',
+              color: activeTab === t.key ? tabColors[t.key as Tab] : '#94a3b8',
+              borderBottom: `2px solid ${activeTab === t.key ? tabColors[t.key as Tab] : 'transparent'}`,
+              marginBottom: -1,
+            }}
+          >
             {t.label}
           </button>
         ))}
       </div>
 
       {/* ── CRESCIMENTO ── */}
-      {activeTab === 'growth' && (loading ? <div style={{ padding: 64, textAlign: 'center', color: '#94a3b8' }}>Calculando...</div> : data && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {activeTab === 'growth' && (loading ? <div id="growth-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+        <div id="growth-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             <KPI label="Novos Profissionais" value={data.newProfessionals} icon={<Users size={18} color="#0D6E6E" />} color="#0D6E6E" bg="#f0fdfa" trend={data.newProfessionalsGrowth} sub="vs período anterior" />
             <KPI label="Total na Plataforma" value={data.totalProfessionals} icon={<Users size={18} color="#2563eb" />} color="#2563eb" bg="#eff6ff" />
@@ -284,8 +318,8 @@ export function MetricsPage() {
       ))}
 
       {/* ── FINANCEIRO ── */}
-      {activeTab === 'financial' && (loading ? <div style={{ padding: 64, textAlign: 'center', color: '#94a3b8' }}>Calculando...</div> : data && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {activeTab === 'financial' && (loading ? <div id="financial-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+        <div id="financial-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             <KPI label="MRR" value={`R$ ${data.mrr.toFixed(0)}`} icon={<DollarSign size={18} color="#7c3aed" />} color="#7c3aed" bg="#f5f3ff" />
             <KPI label="ARR" value={`R$ ${data.arr.toFixed(0)}`} icon={<TrendingUp size={18} color="#0D6E6E" />} color="#0D6E6E" bg="#f0fdfa" />
@@ -297,7 +331,7 @@ export function MetricsPage() {
               <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: '0 0 16px' }}>Evolução do MRR (últimos 6 meses)</p>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={data.mrrHistory}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="month" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} tickFormatter={v => `R$${v.toFixed(0)}`} /><Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="month" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} tickFormatter={v => `R$${v.toFixed(0)}`} /><Tooltip formatter={(v: any) => `R$ ${Number(v).toFixed(2)}`} />
                   <Line type="monotone" dataKey="mrr" name="MRR" stroke="#7c3aed" strokeWidth={2.5} dot={{ fill: '#7c3aed', r: 4 }} />
                 </LineChart>
               </ResponsiveContainer>
@@ -307,10 +341,10 @@ export function MetricsPage() {
               {data.revenueByPlan.length === 0 ? <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', paddingTop: 40 }}>Sem dados</p> : (
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={data.revenueByPlan} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    <Pie data={data.revenueByPlan} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}>
                       {data.revenueByPlan.map((_, i) => <Cell key={i} fill={PLAN_COLORS[i % PLAN_COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => `R$ ${v.toFixed(2)}`} />
+                    <Tooltip formatter={(v: any) => `R$ ${Number(v).toFixed(2)}`} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -324,8 +358,8 @@ export function MetricsPage() {
       ))}
 
       {/* ── ENGAJAMENTO ── */}
-      {activeTab === 'engagement' && (loading ? <div style={{ padding: 64, textAlign: 'center', color: '#94a3b8' }}>Calculando...</div> : data && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {activeTab === 'engagement' && (loading ? <div id="engagement-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+        <div id="engagement-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             <KPI label="Ativos este Mês" value={data.activeThisMonth} icon={<Activity size={18} color="#16a34a" />} color="#16a34a" bg="#f0fdf4" />
             <KPI label="Em Risco de Churn" value={data.atRiskCount} icon={<TrendingDown size={18} color="#dc2626" />} color="#dc2626" bg="#fef2f2" sub="inativos há 30+ dias" />
@@ -358,8 +392,8 @@ export function MetricsPage() {
       ))}
 
       {/* ── AGENTES IA ── */}
-      {activeTab === 'agents' && (loading ? <div style={{ padding: 64, textAlign: 'center', color: '#94a3b8' }}>Calculando...</div> : data && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {activeTab === 'agents' && (loading ? <div id="agents-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+        <div id="agents-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             <KPI label="Total de Conversas" value={data.totalConversations} icon={<Bot size={18} color="#2563eb" />} color="#2563eb" bg="#eff6ff" />
             <KPI label="Taxa de Conclusão" value={`${data.completionRate.toFixed(1)}%`} icon={<Activity size={18} color="#16a34a" />} color="#16a34a" bg="#f0fdf4" />
@@ -394,7 +428,7 @@ export function MetricsPage() {
             <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead><tr style={{ background: '#f8fafc' }}>
-                  {['Agente', 'Conversas', 'Créditos Consumidos', 'Créditos / Conversa'].map(h => <th key={h} style={{ padding: '12px 20px', textAlign: 'left', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}
+                  {['Agente', 'Conversas', 'Créditos Consumidos', 'Créditos / Conversa'].map(h => <th key={h} scope="col" style={{ padding: '12px 20px', textAlign: 'left', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {data.creditsByAgent.map((a: any, i: number) => (
@@ -414,7 +448,7 @@ export function MetricsPage() {
 
       {/* ── SAÚDE DOS USUÁRIOS ── */}
       {activeTab === 'health' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div id="health-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* KPIs saúde */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14 }}>
@@ -466,14 +500,14 @@ export function MetricsPage() {
           {/* Tabela health */}
           <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             {healthLoading ? (
-              <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>Carregando scores...</div>
+              <div style={{ padding: 48, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Carregando scores...</p></div></div>
             ) : healthFiltered.length === 0 ? (
               <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>Sem dados. Execute o schema de tracking e aguarde os primeiros acessos.</div>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead><tr style={{ background: '#f8fafc' }}>
                   {['Score', 'Profissional', 'Status', 'Dias Ativos', 'Sessões', 'Tempo Médio', 'Último Acesso', 'Ação'].map(h => (
-                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                    <th key={h} scope="col" style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
