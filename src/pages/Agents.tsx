@@ -5,7 +5,8 @@ import {
   ToggleLeft, ToggleRight, Sparkles, Wrench, Save, TerminalSquare,
   UserPlus, Bell, HeartHandshake, Star
 } from 'lucide-react'
-import { toast } from 'sonner' 
+import { toast } from 'sonner'
+import { useI18n } from '../i18n' 
 
 interface AgentStats {
   total_conversations: number
@@ -89,12 +90,13 @@ const ALL_AGENTS =[
 ]
 
 export function AgentsPage() {
+  const { t } = useI18n()
   const [configs, setConfigs] = useState<Record<string, AgentConfig>>({})
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
   const[toggling, setToggling] = useState<string | null>(null)
   const [savingPrompt, setSavingPrompt] = useState<string | null>(null)
-  
+
   const [prompts, setPrompts] = useState<Record<string, string>>({})
 
   useEffect(() => { fetchData() },[])
@@ -167,7 +169,7 @@ export function AgentsPage() {
 
     } catch (e) {
       console.error('❌ Erro no fetchData:', e);
-      toast.error("Erro ao sincronizar dados com o servidor.");
+      toast.error(t('agents.toast_sync_error'));
     } finally {
       setLoading(false)
     }
@@ -189,10 +191,10 @@ export function AgentsPage() {
           }).select().single()
         if (data) setConfigs(prev => ({ ...prev, [slug]: data }))
       }
-      toast.success(`${slug} ${newState ? 'ativado' : 'desativado'}`)
+      toast.success(t(newState ? 'agents.toast_toggle_enabled' : 'agents.toast_toggle_disabled', { agent: slug }))
     } catch (e) {
       console.error('Erro ao alterar agente:', e)
-      toast.error('Erro ao alterar status do agente')
+      toast.error(t('agents.toast_toggle_error'))
     } finally { setToggling(null) }
   }
 
@@ -231,10 +233,10 @@ export function AgentsPage() {
         if (data) setConfigs(prev => ({ ...prev, [slug]: data }))
       }
       
-      toast.success(`Prompt do ${slug} salvo com sucesso!`)
-    } catch (e) { 
+      toast.success(t('agents.toast_success', { agent: slug }))
+    } catch (e) {
       console.error('Erro ao salvar prompt:', e)
-      toast.error('Falha ao persistir no banco de dados.')
+      toast.error(t('agents.toast_error'))
     } finally { 
       setSavingPrompt(null) 
     }
@@ -245,14 +247,14 @@ export function AgentsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: 40 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: 0 }}>Laboratório de Inteligência Artificial</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: 0 }}>{t('agents.title')}</h1>
         <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>
-          Configure o comportamento mestre (System Prompts) de todos os agentes da plataforma.
+          {t('agents.subtitle')}
         </p>
       </div>
 
       {loading ? (
-        <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>Sincronizando modelos de IA...</div>
+        <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>{t('agents.loading')}</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {ALL_AGENTS.map(agent => {
@@ -271,7 +273,7 @@ export function AgentsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
                       <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1A1A2E' }}>{agent.name}</h3>
                       <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 20, background: agent.type === 'platform' ? '#f1f5f9' : '#fdf4ff', color: agent.type === 'platform' ? '#475569' : '#c026d3', border: `1px solid ${agent.type === 'platform' ? '#e2e8f0' : '#fbcfe8'}` }}>
-                        {agent.type === 'platform' ? 'USO INTERNO' : 'USO DA CLÍNICA'}
+                        {agent.type === 'platform' ? t('agents.agent_type_platform') : t('agents.agent_type_clinic')}
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>{agent.description}</p>
@@ -292,36 +294,36 @@ export function AgentsPage() {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                           <p style={{ fontSize: 13, fontWeight: 800, color: agent.color, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0, display: 'flex', alignItems: 'center' }}>
                             <TerminalSquare size={16} style={{ marginRight: 8 }} />
-                            System Prompt Mestre
+                            {t('agents.system_prompt_title')}
                           </p>
-                          <button 
+                          <button
                             onClick={() => saveMasterPrompt(agent.slug)}
                             disabled={savingPrompt === agent.slug}
                             style={{ display: 'flex', alignItems: 'center', gap: 6, background: agent.color, color: '#fff', border: 'none', padding: '6px 16px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
                           >
-                            <Save size={14} /> {savingPrompt === agent.slug ? 'Salvando...' : 'Salvar Prompt'}
+                            <Save size={14} /> {savingPrompt === agent.slug ? t('agents.saving_prompt') : t('agents.save_prompt')}
                           </button>
                         </div>
-                        
+
                         <p style={{ fontSize: 12, color: '#475569', marginBottom: 12 }}>
-                          Escreva a instrução base. Variáveis como nome da clínica e serviços serão injetadas via RAG.
+                          {t('agents.prompt_hint')}
                         </p>
 
-                        <textarea 
+                        <textarea
                           value={prompts[agent.slug] || ''}
                           onChange={(e) => setPrompts({...prompts,[agent.slug]: e.target.value})}
-                          placeholder="Ex: Você é um assistente gentil. Sua missão é..."
+                          placeholder={t('agents.prompt_placeholder')}
                           style={{ width: '100%', height: '280px', padding: '16px', borderRadius: 8, border: `1px solid ${agent.border}`, background: '#fff', fontSize: 14, fontFamily: 'monospace', color: '#334155', resize: 'vertical', outline: 'none' }}
                         />
                       </div>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                         <div style={{ background: '#fff', borderRadius: 12, padding: 20, border: `1px solid ${agent.border}` }}>
-                          <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', margin: '0 0 16px' }}>Controle de API</p>
+                          <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', margin: '0 0 16px' }}>{t('agents.api_control_title')}</p>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div>
-                              <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: '0 0 4px' }}>Habilitar Agente</p>
-                              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>Status global na plataforma</p>
+                              <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: '0 0 4px' }}>{t('agents.agent_enable')}</p>
+                              <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{t('agents.agent_enable_hint')}</p>
                             </div>
                             <button
                               onClick={() => toggleAgent(agent.slug, active)}
