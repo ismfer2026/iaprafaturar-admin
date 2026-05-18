@@ -46,6 +46,8 @@ export function NotificationsPage() {
   const [profSearch, setProfSearch] = useState('')
   const [selectedProfs, setSelectedProfs] = useState<string[]>([])
   const [audienceType, setAudienceType] = useState<'all' | 'selected'>('all')
+  const [showAllBroadcasts, setShowAllBroadcasts] = useState(false)
+  const [archivedCount, setArchivedCount] = useState(0)
 
   const [form, setForm] = useState({
     title: '',
@@ -55,6 +57,38 @@ export function NotificationsPage() {
   })
 
   useEffect(() => { fetchAll() }, [])
+
+  const deleteOldBroadcasts = async (daysOld: number) => {
+    try {
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - daysOld)
+
+      const { data: oldIds, error: selectError } = await supabase
+        .from('professional_notifications')
+        .select('id')
+        .eq('category', 'admin_broadcast')
+        .lt('created_at', cutoffDate.toISOString())
+
+      if (selectError) throw selectError
+      if (!oldIds || oldIds.length === 0) {
+        toast.info(`Nenhuma notificação com mais de ${daysOld} dias`)
+        return
+      }
+
+      const { error: deleteError } = await supabase
+        .from('professional_notifications')
+        .delete()
+        .eq('category', 'admin_broadcast')
+        .lt('created_at', cutoffDate.toISOString())
+
+      if (deleteError) throw deleteError
+      toast.success(`${oldIds.length} notificações antigas removidas`)
+      await fetchAll()
+    } catch (e) {
+      console.error('Erro ao limpar:', e)
+      toast.error('Erro ao limpar notificações antigas')
+    }
+  }
 
   const fetchAll = async () => {
     setLoading(true)
@@ -174,10 +208,16 @@ export function NotificationsPage() {
   )
 
   // KPIs
+  const now = new Date()
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const recentBroadcasts = broadcasts.filter(b => new Date(b.sent_at) > thirtyDaysAgo)
+  const displayBroadcasts = showAllBroadcasts ? broadcasts : recentBroadcasts
+
   const totalBroadcasts = broadcasts.length
-  const totalRecipients = broadcasts.reduce((s, b) => s + b.recipient_count, 0)
-  const totalRead = broadcasts.reduce((s, b) => s + b.read_count, 0)
+  const totalRecipients = displayBroadcasts.reduce((s, b) => s + b.recipient_count, 0)
+  const totalRead = displayBroadcasts.reduce((s, b) => s + b.read_count, 0)
   const readRate = totalRecipients > 0 ? ((totalRead / totalRecipients) * 100).toFixed(0) : '0'
+  const hiddenCount = totalBroadcasts - recentBroadcasts.length
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -203,9 +243,21 @@ export function NotificationsPage() {
         ))}
       </div>
 
-      {/* Filtros + botão */}
+      {/* Filtros + botões */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <Filter size={14} color="#64748b" />
+        {hiddenCount > 0 && (
+          <button onClick={() => setShowAllBroadcasts(!showAllBroadcasts)}
+            style={{ padding: '6px 12px', background: '#f0f9ff', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            {showAllBroadcasts ? 'Mostrar recentes' : `Ver ${hiddenCount} antigas`}
+          </button>
+        )}
+        {broadcasts.length > 50 && (
+          <button onClick={() => deleteOldBroadcasts(30)}
+            style={{ padding: '6px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            Limpar +30 dias
+          </button>
+        )}
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowModal(true)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
@@ -216,10 +268,10 @@ export function NotificationsPage() {
       {/* Lista de broadcasts */}
       {loading ? (
         <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>Carregando broadcasts...</div>
-      ) : broadcasts.length === 0 ? (
+      ) : displayBroadcasts.length === 0 ? (
         <div style={{ padding: 64, textAlign: 'center', background: '#f8fafc', borderRadius: 14, border: '2px dashed #e2e8f0' }}>
           <Bell size={36} color="#cbd5e1" style={{ marginBottom: 12 }} />
-          <p style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>Nenhuma notificação enviada</p>
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>Nenhuma notificação {showAllBroadcasts ? '' : 'recente'}</p>
           <p style={{ fontSize: 13, color: '#cbd5e1', margin: '0 0 20px' }}>Comece enviando sua primeira comunicação aos profissionais</p>
           <button onClick={() => setShowModal(true)}
             style={{ padding: '9px 20px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
@@ -228,7 +280,7 @@ export function NotificationsPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {broadcasts.map(bcast => {
+          {displayBroadcasts.map(bcast => {
             const cfg = TYPE_CONFIG[bcast.type]
             const TypeIcon = cfg.icon
             const isOpen = expandedId === bcast.broadcast_id
