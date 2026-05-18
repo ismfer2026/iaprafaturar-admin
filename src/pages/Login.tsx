@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import { useI18n } from '../i18n'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -9,6 +10,7 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
   const navigate = useNavigate()
+  const { t } = useI18n()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,7 +41,7 @@ export function Login() {
             <span style={{ background: '#F4A623', color: '#fff', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 6 }}>Admin</span>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, margin: 0 }}>
-            Painel de controle da plataforma
+            {t('login.panel_subtitle')}
           </p>
 
           <div style={{ marginTop: 64, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -64,19 +66,19 @@ export function Login() {
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48,
       }}>
         <div style={{ width: '100%', maxWidth: 360 }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1A1A2E', margin: '0 0 6px' }}>Bem-vindo de volta</h2>
+          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1A1A2E', margin: '0 0 6px' }}>{t('login.title')}</h2>
           <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 36px' }}>
-            Entre com suas credenciais para acessar o painel
+            {t('login.subtitle')}
           </p>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Email</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="seu@email.com"
+                placeholder={t('login.email_placeholder')}
                 required
                 style={{
                   width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
@@ -89,12 +91,12 @@ export function Login() {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Senha</label>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.password')}</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={t('login.password_placeholder')}
                 required
                 style={{
                   width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
@@ -123,12 +125,12 @@ export function Login() {
               onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
               onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
             >
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? t('login.submitting') : t('login.submit')}
             </button>
           </form>
 
           <p style={{ marginTop: 32, textAlign: 'center', fontSize: 12, color: '#cbd5e1' }}>
-            Acesso restrito apenas para administradores convidados.
+            {t('login.restricted')}
           </p>
         </div>
       </div>

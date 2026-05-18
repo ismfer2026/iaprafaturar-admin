@@ -1,27 +1,37 @@
 import { useLocation } from 'react-router-dom'
 import { Sun, Moon } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
+import { useI18n } from '../i18n'
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/cadastro': 'Cadastro',
-  '/profissionais': 'Profissionais',
-  '/planos': 'Planos',
-  '/embaixadores': 'Embaixadores',
-  '/agentes': 'Agentes de Sistema',
-  '/campanhas': 'Campanhas',
-  '/metricas': 'Métricas',
-  '/nexus': 'Nexus Sphere',
-  '/melhorias': 'Melhorias',
-  '/configuracoes': 'Configurações',
+const pageTitleKeys: Record<string, string> = {
+  '/dashboard': 'navigation.dashboard',
+  '/profissionais': 'navigation.professionals',
+  '/planos': 'navigation.plans',
+  '/embaixadores': 'navigation.ambassadors',
+  '/agentes': 'navigation.agents',
+  '/campanhas': 'navigation.campaigns',
+  '/metricas': 'navigation.metrics',
+  '/nexus': 'navigation.nexus',
+  '/melhorias': 'navigation.improvements',
+  '/configuracoes': 'navigation.settings',
+}
+
+const localeMap = {
+  'pt-BR': 'pt-BR',
+  'en-US': 'en-US',
+  'es-AL': 'es-AR',
 }
 
 export function Header() {
   const location = useLocation()
   const { theme, toggleTheme } = useTheme()
-  const title = pageTitles[location.pathname] || 'Admin'
+  const { t, locale } = useI18n()
 
-  const now = new Date().toLocaleDateString('pt-BR', {
+  const titleKey = pageTitleKeys[location.pathname]
+  const title = titleKey ? t(titleKey) : 'Admin'
+
+  const dateLocale = localeMap[locale] || 'pt-BR'
+  const now = new Date().toLocaleDateString(dateLocale, {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
   const isoDate = new Date().toISOString().split('T')[0]
@@ -40,7 +50,7 @@ export function Header() {
         </time>
         <button
           onClick={toggleTheme}
-          aria-label={`Alternar para modo ${theme === 'light' ? 'escuro' : 'claro'}`}
+          aria-label={theme === 'light' ? t('shell.toggle_dark') : t('shell.toggle_light')}
           style={{
             background: 'var(--secondary)',
             border: '1px solid var(--border)',

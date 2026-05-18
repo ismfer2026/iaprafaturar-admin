@@ -1,29 +1,30 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { LayoutDashboard, Users, CreditCard, Award, Bot, Megaphone, BarChart3, LogOut, Settings, Shield, Rocket, Bell } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useI18n } from '../i18n'
 
-// 🆕 ADICIONADO: { path: '/configuracoes', icon: Settings, label: 'Configurações' }
-const navItems =[
-  { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/nexus', icon: Shield, label: 'Nexus Sphere' },
-  { path: '/profissionais', icon: Users, label: 'Profissionais' },
-  { path: '/planos', icon: CreditCard, label: 'Planos' },
-  { path: '/embaixadores', icon: Award, label: 'Embaixadores' },
-  { path: '/agentes', icon: Bot, label: 'Agentes de Sistema' },
-  { path: '/campanhas', icon: Megaphone, label: 'Campanhas' },
-  { path: '/notificacoes', icon: Bell, label: 'Notificações' },
-  { path: '/metricas', icon: BarChart3, label: 'Métricas' },
-  { path: '/melhorias', icon: Rocket, label: 'Melhorias' },
-  { path: '/configuracoes', icon: Settings, label: 'Configurações' },
+const navItemKeys = [
+  { path: '/dashboard', icon: LayoutDashboard, key: 'navigation.dashboard' },
+  { path: '/nexus', icon: Shield, key: 'navigation.nexus' },
+  { path: '/profissionais', icon: Users, key: 'navigation.professionals' },
+  { path: '/planos', icon: CreditCard, key: 'navigation.plans' },
+  { path: '/embaixadores', icon: Award, key: 'navigation.ambassadors' },
+  { path: '/agentes', icon: Bot, key: 'navigation.agents' },
+  { path: '/campanhas', icon: Megaphone, key: 'navigation.campaigns' },
+  { path: '/notificacoes', icon: Bell, key: 'navigation.notifications' },
+  { path: '/metricas', icon: BarChart3, key: 'navigation.metrics' },
+  { path: '/melhorias', icon: Rocket, key: 'navigation.improvements' },
+  { path: '/configuracoes', icon: Settings, key: 'navigation.settings' },
 ]
 
 export function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { admin, signOut } = useAuth()
+  const { t } = useI18n()
 
   const handleLogout = async () => {
-    if (!window.confirm('Tem certeza que deseja desconectar do painel administrativo?')) {
+    if (!window.confirm(t('navigation.logout_confirm'))) {
       return
     }
     await signOut()
@@ -48,8 +49,8 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav aria-label="Menu principal" style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
-        {navItems.map(({ path, icon: Icon, label }) => {
+      <nav aria-label={t('navigation.menu')} style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
+        {navItemKeys.map(({ path, icon: Icon, key }) => {
           const active = location.pathname === path
           return (
             <Link
@@ -70,7 +71,7 @@ export function Sidebar() {
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLAnchorElement).style.background = 'transparent' }}
             >
               <Icon size={17} style={{ opacity: active ? 1 : 0.8 }} aria-hidden={true} />
-              <span>{label}</span>
+              <span>{t(key)}</span>
               {active && <span style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: '50%', background: '#F4A623' }} aria-hidden={true} />}
             </Link>
           )
@@ -80,13 +81,13 @@ export function Sidebar() {
       {/* Footer */}
       <div style={{ padding: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ marginBottom: 12 }}>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: 0 }}>Conectado como</p>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: 0 }}>{t('navigation.connected_as')}</p>
           <p style={{ fontSize: 14, fontWeight: 600, margin: '2px 0 0' }}>{admin?.name ?? 'Admin'}</p>
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: '1px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{admin?.email ?? ''}</p>
         </div>
         <button
           onClick={handleLogout}
-          aria-label="Sair da conta"
+          aria-label={t('navigation.logout')}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '9px 16px', borderRadius: 8, background: '#fff', color: '#0D6E6E',
@@ -94,7 +95,7 @@ export function Sidebar() {
           }}
         >
           <LogOut size={16} aria-hidden={true} />
-          Sair
+          {t('navigation.logout')}
         </button>
       </div>
     </aside>
