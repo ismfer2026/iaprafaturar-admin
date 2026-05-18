@@ -2,20 +2,28 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { TrendingUp, TrendingDown, Users, DollarSign, Activity, Bot, RefreshCw, Search, AlertTriangle, Zap, Clock, BarChart2, Heart } from 'lucide-react'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { useI18n } from '@/i18n'
 
 type Period = '7' | '30' | '90' | '365'
 type Tab = 'growth' | 'financial' | 'engagement' | 'agents' | 'health'
 
-const PERIOD_LABELS: Record<Period, string> = { '7': '7 dias', '30': '30 dias', '90': '90 dias', '365': 'Ano atual' }
 const PLAN_COLORS = ['#0D6E6E', '#7c3aed', '#d97706', '#64748b']
 
-const STATUS_CONFIG = {
-  healthy:  { label: 'Saudável',  color: '#16a34a', bg: '#f0fdf4', icon: '💚', border: '#bbf7d0' },
-  at_risk:  { label: 'Em Risco',  color: '#d97706', bg: '#fffbeb', icon: '⚠️', border: '#fde68a' },
-  churning: { label: 'Churnando', color: '#dc2626', bg: '#fef2f2', icon: '🔴', border: '#fecaca' },
-  inactive: { label: 'Inativo',   color: '#64748b', bg: '#f8fafc', icon: '⚫', border: '#e2e8f0' },
-  new:      { label: 'Novo',      color: '#2563eb', bg: '#eff6ff', icon: '🆕', border: '#bfdbfe' },
+const STATUS_CONFIG_BASE = {
+  healthy:  { color: '#16a34a', bg: '#f0fdf4', icon: '💚', border: '#bbf7d0' },
+  at_risk:  { color: '#d97706', bg: '#fffbeb', icon: '⚠️', border: '#fde68a' },
+  churning: { color: '#dc2626', bg: '#fef2f2', icon: '🔴', border: '#fecaca' },
+  inactive: { color: '#64748b', bg: '#f8fafc', icon: '⚫', border: '#e2e8f0' },
+  new:      { color: '#2563eb', bg: '#eff6ff', icon: '🆕', border: '#bfdbfe' },
 }
+
+const getStatusConfig = (t: any) => ({
+  healthy:  { ...STATUS_CONFIG_BASE.healthy,  label: t('metrics.health_status_healthy') },
+  at_risk:  { ...STATUS_CONFIG_BASE.at_risk,  label: t('metrics.health_status_at_risk') },
+  churning: { ...STATUS_CONFIG_BASE.churning, label: t('metrics.health_status_churning') },
+  inactive: { ...STATUS_CONFIG_BASE.inactive, label: t('metrics.health_status_inactive') },
+  new:      { ...STATUS_CONFIG_BASE.new,      label: t('metrics.health_status_new') },
+})
 
 // ─── Sub-componentes ───────────────────────────────────────
 
@@ -88,6 +96,7 @@ interface HealthScore {
 // ─── Componente principal ─────────────────────────────────
 
 export function MetricsPage() {
+  const { t } = useI18n()
   const [period, setPeriod] = useState<Period>('90')
   const [activeTab, setActiveTab] = useState<Tab>('growth')
   const [data, setData] = useState<MetricData | null>(null)
@@ -243,14 +252,7 @@ export function MetricsPage() {
     } catch (e) { console.error(e) } finally { setRecalculating(false) }
   }
 
-  const tabs = [
-    { key: 'growth',     label: '📈 Crescimento' },
-    { key: 'financial',  label: '💰 Financeiro' },
-    { key: 'engagement', label: '🔥 Engajamento' },
-    { key: 'agents',     label: '🤖 Agentes IA' },
-    { key: 'health',     label: '❤️ Saúde dos Usuários' },
-  ]
-  const tabColors: Record<Tab, string> = { growth: '#0D6E6E', financial: '#7c3aed', engagement: '#d97706', agents: '#2563eb', health: '#dc2626' }
+  const STATUS_CONFIG = getStatusConfig(t)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -260,24 +262,30 @@ export function MetricsPage() {
         <div style={{ display: 'flex', gap: 6 }}>
           {(['7', '30', '90', '365'] as Period[]).map(p => (
             <button key={p} onClick={() => setPeriod(p)} style={{ padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: period === p ? '#0D6E6E' : '#fff', color: period === p ? '#fff' : '#475569', border: `1px solid ${period === p ? '#0D6E6E' : '#e2e8f0'}` }}>
-              {PERIOD_LABELS[p]}
+              {t(`metrics.period_${p as Period}`)}
             </button>
           ))}
         </div>
         <button onClick={fetchMetrics} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
-          <RefreshCw size={14} /> Atualizar
+          <RefreshCw size={14} /> {t('metrics.period_refresh')}
         </button>
       </div>
 
       {/* Tabs */}
       <div role="tablist" style={{ display: 'flex', gap: 4, borderBottom: '1px solid #e2e8f0' }}>
-        {tabs.map(t => (
+        {[
+          { key: 'growth', color: '#0D6E6E' },
+          { key: 'financial', color: '#7c3aed' },
+          { key: 'engagement', color: '#d97706' },
+          { key: 'agents', color: '#2563eb' },
+          { key: 'health', color: '#dc2626' },
+        ].map(tab => (
           <button
-            key={t.key}
+            key={tab.key}
             role="tab"
-            aria-selected={activeTab === t.key}
-            aria-controls={`${t.key}-panel`}
-            onClick={() => setActiveTab(t.key as Tab)}
+            aria-selected={activeTab === tab.key as Tab}
+            aria-controls={`${tab.key}-panel`}
+            onClick={() => setActiveTab(tab.key as Tab)}
             style={{
               padding: '10px 20px',
               fontSize: 13,
@@ -285,32 +293,32 @@ export function MetricsPage() {
               cursor: 'pointer',
               border: 'none',
               background: 'none',
-              color: activeTab === t.key ? tabColors[t.key as Tab] : '#94a3b8',
-              borderBottom: `2px solid ${activeTab === t.key ? tabColors[t.key as Tab] : 'transparent'}`,
+              color: activeTab === tab.key as Tab ? tab.color : '#94a3b8',
+              borderBottom: `2px solid ${activeTab === tab.key as Tab ? tab.color : 'transparent'}`,
               marginBottom: -1,
             }}
           >
-            {t.label}
+            {t(`metrics.tab_${tab.key}`)}
           </button>
         ))}
       </div>
 
       {/* ── CRESCIMENTO ── */}
-      {activeTab === 'growth' && (loading ? <div id="growth-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+      {activeTab === 'growth' && (loading ? <div id="growth-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>{t('metrics.syncing')}</p></div></div> : data && (
         <div id="growth-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-            <KPI label="Novos Profissionais" value={data.newProfessionals} icon={<Users size={18} color="#0D6E6E" />} color="#0D6E6E" bg="#f0fdfa" trend={data.newProfessionalsGrowth} sub="vs período anterior" />
-            <KPI label="Total na Plataforma" value={data.totalProfessionals} icon={<Users size={18} color="#2563eb" />} color="#2563eb" bg="#eff6ff" />
-            <KPI label="Conversão Trial→Pago" value={`${data.trialConversionRate.toFixed(1)}%`} icon={<TrendingUp size={18} color="#16a34a" />} color="#16a34a" bg="#f0fdf4" />
-            <KPI label="Retenção" value={`${data.retentionRate.toFixed(1)}%`} icon={<Activity size={18} color="#d97706" />} color="#d97706" bg="#fffbeb" />
+            <KPI label={t('metrics.growth_new_professionals')} value={data.newProfessionals} icon={<Users size={18} color="#0D6E6E" />} color="#0D6E6E" bg="#f0fdfa" trend={data.newProfessionalsGrowth} sub={t('metrics.growth_new_sub')} />
+            <KPI label={t('metrics.growth_total_professionals')} value={data.totalProfessionals} icon={<Users size={18} color="#2563eb" />} color="#2563eb" bg="#eff6ff" />
+            <KPI label={t('metrics.growth_trial_conversion')} value={`${data.trialConversionRate.toFixed(1)}%`} icon={<TrendingUp size={18} color="#16a34a" />} color="#16a34a" bg="#f0fdf4" />
+            <KPI label={t('metrics.growth_retention')} value={`${data.retentionRate.toFixed(1)}%`} icon={<Activity size={18} color="#d97706" />} color="#d97706" bg="#fffbeb" />
           </div>
           <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 24 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: '0 0 16px' }}>Cadastros vs Conversões (últimos 6 meses)</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: '0 0 16px' }}>{t('metrics.growth_chart_title')}</p>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={data.growthByMonth}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="month" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} /><Tooltip /><Legend />
-                <Bar dataKey="cadastros" name="Cadastros" fill="#0D6E6E" radius={[4,4,0,0]} />
-                <Bar dataKey="conversoes" name="Conversões" fill="#99f6e4" radius={[4,4,0,0]} />
+                <Bar dataKey="cadastros" name={t('metrics.growth_chart_signups')} fill="#0D6E6E" radius={[4,4,0,0]} />
+                <Bar dataKey="conversoes" name={t('metrics.growth_chart_conversions')} fill="#99f6e4" radius={[4,4,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -318,17 +326,17 @@ export function MetricsPage() {
       ))}
 
       {/* ── FINANCEIRO ── */}
-      {activeTab === 'financial' && (loading ? <div id="financial-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+      {activeTab === 'financial' && (loading ? <div id="financial-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>{t('metrics.syncing')}</p></div></div> : data && (
         <div id="financial-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-            <KPI label="MRR" value={`R$ ${data.mrr.toFixed(0)}`} icon={<DollarSign size={18} color="#7c3aed" />} color="#7c3aed" bg="#f5f3ff" />
-            <KPI label="ARR" value={`R$ ${data.arr.toFixed(0)}`} icon={<TrendingUp size={18} color="#0D6E6E" />} color="#0D6E6E" bg="#f0fdfa" />
-            <KPI label="Churn Rate" value={`${data.churnRate.toFixed(2)}%`} icon={<TrendingDown size={18} color="#dc2626" />} color="#dc2626" bg="#fef2f2" sub="no período" />
-            <KPI label="LTV Estimado" value={`R$ ${data.ltv.toFixed(0)}`} icon={<DollarSign size={18} color="#d97706" />} color="#d97706" bg="#fffbeb" />
+            <KPI label={t('metrics.financial_mrr')} value={`R$ ${data.mrr.toFixed(0)}`} icon={<DollarSign size={18} color="#7c3aed" />} color="#7c3aed" bg="#f5f3ff" />
+            <KPI label={t('metrics.financial_arr')} value={`R$ ${data.arr.toFixed(0)}`} icon={<TrendingUp size={18} color="#0D6E6E" />} color="#0D6E6E" bg="#f0fdfa" />
+            <KPI label={t('metrics.financial_churn')} value={`${data.churnRate.toFixed(2)}%`} icon={<TrendingDown size={18} color="#dc2626" />} color="#dc2626" bg="#fef2f2" sub={t('metrics.financial_churn_sub')} />
+            <KPI label={t('metrics.financial_ltv')} value={`R$ ${data.ltv.toFixed(0)}`} icon={<DollarSign size={18} color="#d97706" />} color="#d97706" bg="#fffbeb" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
             <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 24 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: '0 0 16px' }}>Evolução do MRR (últimos 6 meses)</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: '0 0 16px' }}>{t('metrics.financial_mrr_evolution')}</p>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={data.mrrHistory}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" /><XAxis dataKey="month" tick={{ fontSize: 12 }} /><YAxis tick={{ fontSize: 12 }} tickFormatter={v => `R$${v.toFixed(0)}`} /><Tooltip formatter={(v: any) => `R$ ${Number(v).toFixed(2)}`} />
@@ -337,8 +345,8 @@ export function MetricsPage() {
               </ResponsiveContainer>
             </div>
             <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 24 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: '0 0 16px' }}>Receita por Plano</p>
-              {data.revenueByPlan.length === 0 ? <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', paddingTop: 40 }}>Sem dados</p> : (
+              <p style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', margin: '0 0 16px' }}>{t('metrics.financial_revenue_by_plan')}</p>
+              {data.revenueByPlan.length === 0 ? <p style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center', paddingTop: 40 }}>{t('metrics.financial_no_data')}</p> : (
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie data={data.revenueByPlan} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}>
@@ -349,7 +357,7 @@ export function MetricsPage() {
                 </ResponsiveContainer>
               )}
               <div style={{ marginTop: 12, background: '#f0fdf4', borderRadius: 8, padding: '10px 14px' }}>
-                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>Receita via Embaixadores</p>
+                <p style={{ fontSize: 11, color: '#64748b', margin: '0 0 2px' }}>{t('metrics.financial_ambassador_revenue')}</p>
                 <p style={{ fontSize: 16, fontWeight: 800, color: '#16a34a', margin: 0 }}>R$ {data.ambassadorRevenue.toFixed(2)}</p>
               </div>
             </div>
@@ -358,7 +366,7 @@ export function MetricsPage() {
       ))}
 
       {/* ── ENGAJAMENTO ── */}
-      {activeTab === 'engagement' && (loading ? <div id="engagement-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+      {activeTab === 'engagement' && (loading ? <div id="engagement-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>{t('metrics.syncing')}</p></div></div> : data && (
         <div id="engagement-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             <KPI label="Ativos este Mês" value={data.activeThisMonth} icon={<Activity size={18} color="#16a34a" />} color="#16a34a" bg="#f0fdf4" />
@@ -392,7 +400,7 @@ export function MetricsPage() {
       ))}
 
       {/* ── AGENTES IA ── */}
-      {activeTab === 'agents' && (loading ? <div id="agents-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>Sincronizando dados...</p></div></div> : data && (
+      {activeTab === 'agents' && (loading ? <div id="agents-panel" role="tabpanel" style={{ padding: 64, textAlign: 'center' }}><div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}><div style={{ display: 'flex', gap: 6 }}><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.2s' }} /><div className="animate-pulse" style={{ width: 12, height: 12, background: '#d1d5db', borderRadius: '50%', animationDelay: '0.4s' }} /></div><p style={{ color: '#94a3b8', margin: 0 }}>{t('metrics.syncing')}</p></div></div> : data && (
         <div id="agents-panel" role="tabpanel" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
             <KPI label="Total de Conversas" value={data.totalConversations} icon={<Bot size={18} color="#2563eb" />} color="#2563eb" bg="#eff6ff" />
