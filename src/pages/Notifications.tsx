@@ -47,7 +47,6 @@ export function NotificationsPage() {
   const [selectedProfs, setSelectedProfs] = useState<string[]>([])
   const [audienceType, setAudienceType] = useState<'all' | 'selected'>('all')
   const [showAllBroadcasts, setShowAllBroadcasts] = useState(false)
-  const [archivedCount, setArchivedCount] = useState(0)
 
   const [form, setForm] = useState({
     title: '',
