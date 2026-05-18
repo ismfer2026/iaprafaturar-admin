@@ -6,6 +6,7 @@ import {
   Users, Clock
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useI18n } from '../i18n'
 
 type NotifType = 'info' | 'alert' | 'warning' | 'success' | 'update'
 
@@ -28,15 +29,16 @@ interface Broadcast {
   sent_at: string
 }
 
-const TYPE_CONFIG: Record<NotifType, { label: string; color: string; bg: string; border: string; icon: any }> = {
-  info:    { label: 'Informativo', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd', icon: Info },
-  alert:   { label: 'Alerta',      color: '#dc2626', bg: '#fef2f2', border: '#fecaca', icon: AlertTriangle },
-  warning: { label: 'Atenção',     color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: AlertCircle },
-  success: { label: 'Novidade',    color: '#16a34a', bg: '#f0fdf4', border: '#a7f3d0', icon: CheckCircle },
-  update:  { label: 'Atualização', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', icon: Sparkles },
+const TYPE_CONFIG_DEFAULTS: Record<NotifType, { color: string; bg: string; border: string; icon: any }> = {
+  info:    { color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd', icon: Info },
+  alert:   { color: '#dc2626', bg: '#fef2f2', border: '#fecaca', icon: AlertTriangle },
+  warning: { color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: AlertCircle },
+  success: { color: '#16a34a', bg: '#f0fdf4', border: '#a7f3d0', icon: CheckCircle },
+  update:  { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', icon: Sparkles },
 }
 
 export function NotificationsPage() {
+  const { t } = useI18n()
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([])
   const [professionals, setProfessionals] = useState<ProfWithPrefs[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,6 +57,14 @@ export function NotificationsPage() {
     priority: 5,
   })
 
+  const getTypeConfig = () => ({
+    info:    { ...TYPE_CONFIG_DEFAULTS.info, label: t('notifications.broadcast_type_info') },
+    alert:   { ...TYPE_CONFIG_DEFAULTS.alert, label: t('notifications.broadcast_type_alert') },
+    warning: { ...TYPE_CONFIG_DEFAULTS.warning, label: t('notifications.broadcast_type_warning') },
+    success: { ...TYPE_CONFIG_DEFAULTS.success, label: t('notifications.broadcast_type_success') },
+    update:  { ...TYPE_CONFIG_DEFAULTS.update, label: t('notifications.broadcast_type_update') },
+  })
+
   useEffect(() => { fetchAll() }, [])
 
   const deleteOldBroadcasts = async (daysOld: number) => {
@@ -70,7 +80,7 @@ export function NotificationsPage() {
 
       if (selectError) throw selectError
       if (!oldIds || oldIds.length === 0) {
-        toast.info(`Nenhuma notificação com mais de ${daysOld} dias`)
+        toast.info(t('notifications.toast_clear_none', { days: daysOld }))
         return
       }
 
@@ -81,11 +91,11 @@ export function NotificationsPage() {
         .lt('created_at', cutoffDate.toISOString())
 
       if (deleteError) throw deleteError
-      toast.success(`${oldIds.length} notificações antigas removidas`)
+      toast.success(`${oldIds.length} ${t('notifications.toast_clear_success')}`)
       await fetchAll()
     } catch (e) {
       console.error('Erro ao limpar:', e)
-      toast.error('Erro ao limpar notificações antigas')
+      toast.error(t('notifications.toast_clear_error'))
     }
   }
 
@@ -150,7 +160,7 @@ export function NotificationsPage() {
 
   const sendBroadcast = async () => {
     if (!form.title.trim() || !form.body.trim()) {
-      toast.error('Título e corpo são obrigatórios')
+      toast.error(t('notifications.toast_title_required'))
       return
     }
 
@@ -161,7 +171,7 @@ export function NotificationsPage() {
         : selectedProfs
 
       if (targetIds.length === 0) {
-        toast.error('Selecione pelo menos um profissional')
+        toast.error(t('notifications.toast_select_profs'))
         setSending(false)
         return
       }
@@ -195,7 +205,7 @@ export function NotificationsPage() {
       await fetchAll()
     } catch (e) {
       console.error('Erro ao enviar broadcast:', e)
-      toast.error('Erro ao enviar broadcast')
+      toast.error(t('notifications.toast_send_error'))
     } finally {
       setSending(false)
     }
@@ -223,17 +233,17 @@ export function NotificationsPage() {
 
       {/* Título */}
       <div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>Notificações & Comunicações</h1>
-        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Canal centralizado para enviar comunicações diretas aos profissionais.</p>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>{t('notifications.title')}</h1>
+        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>{t('notifications.subtitle')}</p>
       </div>
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
         {[
-          { label: 'Total de Broadcasts', value: totalBroadcasts, color: '#0D6E6E' },
-          { label: 'Destinatários Únicos', value: totalRecipients.toLocaleString('pt-BR'), color: '#0284c7' },
-          { label: 'Taxa de Leitura', value: `${readRate}%`, color: '#16a34a' },
-          { label: 'Profissionais Ativos', value: professionals.length, color: '#7c3aed' },
+          { label: t('notifications.kpi_total'), value: totalBroadcasts, color: '#0D6E6E' },
+          { label: t('notifications.kpi_recipients'), value: totalRecipients.toLocaleString('pt-BR'), color: '#0284c7' },
+          { label: t('notifications.kpi_read_rate'), value: `${readRate}%`, color: '#16a34a' },
+          { label: t('notifications.kpi_active_profs'), value: professionals.length, color: '#7c3aed' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: '16px 20px' }}>
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: '#64748b', margin: '0 0 6px' }}>{label}</p>
@@ -248,38 +258,39 @@ export function NotificationsPage() {
         {hiddenCount > 0 && (
           <button onClick={() => setShowAllBroadcasts(!showAllBroadcasts)}
             style={{ padding: '6px 12px', background: '#f0f9ff', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            {showAllBroadcasts ? 'Mostrar recentes' : `Ver ${hiddenCount} antigas`}
+            {showAllBroadcasts ? t('notifications.show_recent') : t('notifications.show_old', { count: hiddenCount })}
           </button>
         )}
         {broadcasts.length > 50 && (
           <button onClick={() => deleteOldBroadcasts(30)}
             style={{ padding: '6px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-            Limpar +30 dias
+            {t('notifications.clear_old')}
           </button>
         )}
         <div style={{ flex: 1 }} />
         <button onClick={() => setShowModal(true)}
           style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 20px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-          <Plus size={15} /> Nova Notificação
+          <Plus size={15} /> {t('notifications.new_notification')}
         </button>
       </div>
 
       {/* Lista de broadcasts */}
       {loading ? (
-        <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>Carregando broadcasts...</div>
+        <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>{t('notifications.loading')}</div>
       ) : displayBroadcasts.length === 0 ? (
         <div style={{ padding: 64, textAlign: 'center', background: '#f8fafc', borderRadius: 14, border: '2px dashed #e2e8f0' }}>
           <Bell size={36} color="#cbd5e1" style={{ marginBottom: 12 }} />
-          <p style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>Nenhuma notificação {showAllBroadcasts ? '' : 'recente'}</p>
-          <p style={{ fontSize: 13, color: '#cbd5e1', margin: '0 0 20px' }}>Comece enviando sua primeira comunicação aos profissionais</p>
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>{showAllBroadcasts ? t('notifications.empty_title') : t('notifications.empty_recent')}</p>
+          <p style={{ fontSize: 13, color: '#cbd5e1', margin: '0 0 20px' }}>{t('notifications.empty_message')}</p>
           <button onClick={() => setShowModal(true)}
             style={{ padding: '9px 20px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-            Enviar Notificação
+            {t('notifications.send_button')}
           </button>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {displayBroadcasts.map(bcast => {
+            const TYPE_CONFIG = getTypeConfig()
             const cfg = TYPE_CONFIG[bcast.type]
             const TypeIcon = cfg.icon
             const isOpen = expandedId === bcast.broadcast_id
@@ -308,7 +319,7 @@ export function NotificationsPage() {
                     </div>
                     <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#64748b' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Users size={14} /> {bcast.recipient_count} destinatários
+                        <Users size={14} /> {bcast.recipient_count} {t('notifications.recipients_label')}
                       </span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Clock size={14} /> {new Date(bcast.sent_at).toLocaleDateString('pt-BR')}
@@ -319,7 +330,7 @@ export function NotificationsPage() {
                   {/* Barra de progresso */}
                   <div style={{ minWidth: 120 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#0f172a' }}>Lidos</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#0f172a' }}>{t('notifications.read_label')}</span>
                       <span style={{ fontSize: 11, fontWeight: 600, color: cfg.color }}>{readPct}%</span>
                     </div>
                     <div style={{ height: 6, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden' }}>
@@ -339,7 +350,7 @@ export function NotificationsPage() {
                   <div style={{ borderTop: `1px solid ${cfg.border}`, background: cfg.bg, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {/* Corpo */}
                     <div>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: cfg.color, textTransform: 'uppercase', margin: '0 0 8px' }}>Mensagem</p>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: cfg.color, textTransform: 'uppercase', margin: '0 0 8px' }}>{t('notifications.message_label')}</p>
                       <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: `1px solid ${cfg.border}`, fontSize: 13, color: '#374151', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                         {bcast.body}
                       </div>
@@ -348,9 +359,9 @@ export function NotificationsPage() {
                     {/* Stats */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
                       {[
-                        { label: 'Lidos', value: bcast.read_count, color: cfg.color },
-                        { label: 'Não lidos', value: bcast.recipient_count - bcast.read_count, color: '#94a3b8' },
-                        { label: 'Taxa', value: `${readPct}%`, color: cfg.color },
+                        { label: t('notifications.read_label'), value: bcast.read_count, color: cfg.color },
+                        { label: t('notifications.not_read_label'), value: bcast.recipient_count - bcast.read_count, color: '#94a3b8' },
+                        { label: t('notifications.rate_label'), value: `${readPct}%`, color: cfg.color },
                       ].map(({ label, value, color }) => (
                         <div key={label} style={{ background: '#fff', borderRadius: 8, padding: '10px 12px', border: `1px solid ${cfg.border}`, textAlign: 'center' }}>
                           <p style={{ fontSize: 16, fontWeight: 900, color, margin: '0 0 2px' }}>{value}</p>
@@ -373,7 +384,7 @@ export function NotificationsPage() {
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, background: '#fff', zIndex: 1 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1A1A2E' }}>Nova Notificação</h2>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#1A1A2E' }}>{t('notifications.new_notification')}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}><X size={20} /></button>
             </div>
 
@@ -382,16 +393,16 @@ export function NotificationsPage() {
               {/* Linha 1: título + tipo */}
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Título *</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('notifications.broadcast_title')} *</label>
                   <input value={form.title} placeholder="Ex: Atualização importante..."
                     onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Tipo</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('notifications.broadcast_type')}</label>
                   <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as NotifType }))}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', background: '#fff' }}>
-                    {(Object.entries(TYPE_CONFIG) as [NotifType, any][]).map(([k, v]) => (
+                    {(Object.entries(getTypeConfig()) as [NotifType, any][]).map(([k, v]) => (
                       <option key={k} value={k}>{v.label}</option>
                     ))}
                   </select>
@@ -401,7 +412,7 @@ export function NotificationsPage() {
               {/* Prioridade */}
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                  Prioridade: <span style={{ color: '#0D6E6E', fontWeight: 700 }}>{form.priority}</span>
+                  {t('notifications.broadcast_priority')}: <span style={{ color: '#0D6E6E', fontWeight: 700 }}>{form.priority}</span>
                 </label>
                 <input type="range" min="1" max="10" value={form.priority}
                   onChange={e => setForm(p => ({ ...p, priority: parseInt(e.target.value) }))}
@@ -410,15 +421,15 @@ export function NotificationsPage() {
 
               {/* Corpo */}
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Mensagem *</label>
-                <textarea value={form.body} rows={5} placeholder="Digite a mensagem que será enviada aos profissionais..."
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('notifications.broadcast_message')} *</label>
+                <textarea value={form.body} rows={5} placeholder={t('notifications.broadcast_placeholder')}
                   onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
                   style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }} />
               </div>
 
               {/* Público-alvo */}
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Público-alvo</label>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>{t('notifications.audience')}</label>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
                   {(['all', 'selected'] as const).map(opt => (
                     <button key={opt} onClick={() => { setAudienceType(opt); setSelectedProfs([]); }}
@@ -426,7 +437,7 @@ export function NotificationsPage() {
                         flex: 1, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, fontWeight: 600,
                         background: audienceType === opt ? '#0D6E6E' : '#fff', color: audienceType === opt ? '#fff' : '#475569', cursor: 'pointer'
                       }}>
-                      {opt === 'all' ? 'Todos os profissionais' : 'Selecionados'}
+                      {opt === 'all' ? t('notifications.audience_all') : t('notifications.audience_selected')}
                     </button>
                   ))}
                 </div>
@@ -436,9 +447,9 @@ export function NotificationsPage() {
               {audienceType === 'selected' && (
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                    Profissionais selecionados ({selectedProfs.length})
+                    {t('notifications.selected_count', { count: selectedProfs.length })}
                   </label>
-                  <input placeholder="Buscar profissional..." value={profSearch} onChange={e => setProfSearch(e.target.value)}
+                  <input placeholder={t('notifications.search_placeholder')} value={profSearch} onChange={e => setProfSearch(e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, maxHeight: 200, overflowY: 'auto' }}>
                     {filteredProfs.map(p => {
@@ -467,11 +478,11 @@ export function NotificationsPage() {
             <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10, position: 'sticky', bottom: 0, background: '#fff' }}>
               <button onClick={() => setShowModal(false)}
                 style={{ padding: '9px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0' }}>
-                Cancelar
+                {t('notifications.modal_cancel')}
               </button>
               <button onClick={sendBroadcast} disabled={sending}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 24px', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer', background: sending ? '#94a3b8' : '#0D6E6E', color: '#fff', border: 'none' }}>
-                <Send size={14} /> {sending ? 'Enviando...' : 'Enviar Notificação'}
+                <Send size={14} /> {sending ? t('notifications.modal_sending') : t('notifications.modal_send')}
               </button>
             </div>
           </div>
