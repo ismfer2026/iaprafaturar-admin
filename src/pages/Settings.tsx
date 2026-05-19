@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, Server, Smartphone, Key, Eye, EyeOff, Lock, AlertCircle } from 'lucide-react';
+import { Save, Server, Eye, EyeOff, Lock, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
 import * as Sentry from '@sentry/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -117,40 +117,51 @@ export default function SettingsPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-slate-500">{t('settings.loading')}</div>;
+  if (loading) return <div className="flex h-screen items-center justify-center"><div className="text-slate-500">{t('settings.loading')}</div></div>;
 
   return (
-    <div className="space-y-6 pb-20">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">{t('settings.platform_title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('settings.platform_subtitle')} {admin && <span className="text-slate-600">{t('settings.connected_as')} {admin.name}</span>}</p>
+    <div className="pb-20">
+      {/* Header */}
+      <div className="mb-8 border-b border-slate-200 pb-6">
+        <h1 className="text-4xl font-bold text-slate-900 mb-2">{t('settings.platform_title')}</h1>
+        <div className="flex items-center gap-2 text-slate-600">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <span>Admin conectado: <span className="font-semibold text-slate-900">{admin?.name}</span></span>
+        </div>
       </div>
 
-      <Card className="border-2 border-[#0D6E6E]/20 bg-gradient-to-br from-[#F8FFFE] to-[#E8F5F5] max-w-3xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[#0D6E6E]">
-            <Server className="w-5 h-5" />
-            {t('settings.evolution_card_title')}
+      {/* Main Content Grid */}
+      <div className="space-y-6 max-w-4xl">
+
+        {/* Evolution API Section */}
+        <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="flex items-center gap-3 text-slate-900 text-lg">
+            <div className="p-2 bg-teal-100 rounded-lg">
+              <Server className="w-5 h-5 text-teal-700" />
+            </div>
+            Evolution API (WhatsApp)
           </CardTitle>
+          <p className="text-sm text-slate-600 mt-1">Configurar integração com Evolution API para WhatsApp</p>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <label htmlFor="url-api" className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-              <Server className="w-4 h-4" aria-hidden={true} /> {t('settings.evolution_url_label')}
+        <CardContent className="pt-6 space-y-5">
+          <div className="space-y-2.5">
+            <label htmlFor="url-api" className="text-sm font-semibold text-slate-700">
+              URL da API
             </label>
             <Input
               id="url-api"
               value={formData.evolution_api_url}
               onChange={e => setFormData({...formData, evolution_api_url: e.target.value})}
-              placeholder={t('settings.evolution_url_placeholder')}
-              className="bg-white"
+              placeholder="https://sua-api.evolution.ai"
+              className="bg-white border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
             />
-            <p className="text-xs text-slate-400">{t('settings.evolution_url_hint')}</p>
+            <p className="text-xs text-slate-500">Ex: https://evo.israel-miranda.cloud/manager/</p>
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="global-key" className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-              <Key className="w-4 h-4" aria-hidden={true} /> {t('settings.evolution_key_label')}
+          <div className="space-y-2.5">
+            <label htmlFor="global-key" className="text-sm font-semibold text-slate-700">
+              Chave Global
             </label>
             <div className="flex gap-2">
               <Input
@@ -158,66 +169,65 @@ export default function SettingsPage() {
                 type={showApiKey ? 'text' : 'password'}
                 value={formData.evolution_global_key}
                 onChange={e => setFormData({...formData, evolution_global_key: e.target.value})}
-                placeholder={t('settings.evolution_key_placeholder')}
-                className="bg-white flex-1"
+                placeholder="••••••••••••••••"
+                className="bg-white border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-1"
               />
               <button
                 onClick={() => setShowApiKey(!showApiKey)}
-                aria-label={showApiKey ? t('settings.evolution_key_hide') : t('settings.evolution_key_show')}
-                className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition"
+                aria-label={showApiKey ? 'Ocultar' : 'Mostrar'}
+                className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition text-slate-600"
               >
-                {showApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <div className="space-y-2 pt-4 border-t border-[#0D6E6E]/10">
-            <label htmlFor="instancia" className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-              <Smartphone className="w-4 h-4" aria-hidden={true} /> {t('settings.evolution_instance_label')}
+          <div className="space-y-2.5 pt-5 border-t border-slate-200">
+            <label htmlFor="instancia" className="text-sm font-semibold text-slate-700">
+              Nome da Instância Master
             </label>
             <Input
               id="instancia"
               value={formData.master_instance_name}
               onChange={e => setFormData({...formData, master_instance_name: e.target.value})}
-              placeholder={t('settings.evolution_instance_placeholder')}
-              className="bg-white"
+              placeholder="instancia-master"
+              className="bg-white border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
             />
-            <p className="text-xs text-slate-500 font-medium mt-1">
-              {t('settings.evolution_instance_hint')}
-            </p>
+            <p className="text-xs text-slate-500">Nome único da instância no Evolution</p>
           </div>
 
-          <div className="pt-4 flex justify-end">
-            <Button onClick={handleSave} disabled={saving} className="bg-[#0D6E6E] hover:bg-[#0a5858]">
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700 text-white">
               <Save className="w-4 h-4 mr-2" />
-              {saving ? t('settings.evolution_saving') : t('settings.evolution_save_button')}
+              {saving ? 'Salvando...' : 'Salvar Configurações'}
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-2 border-blue-200/50 bg-gradient-to-br from-blue-50 to-blue-50/50 max-w-3xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-blue-700">
-            <Lock className="w-5 h-5" />
-            {t('settings.password_card_title')}
+      {/* Password Section */}
+      <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="flex items-center gap-3 text-slate-900 text-lg">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Lock className="w-5 h-5 text-blue-700" />
+            </div>
+            Alterar Senha
           </CardTitle>
+          <p className="text-sm text-slate-600 mt-1">Atualize sua senha de administrador com segurança</p>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <p className="text-sm text-slate-700 font-semibold">
-              {t('settings.password_update_desc')}
-            </p>
-            <p className="text-xs text-slate-600">
-              {t('settings.password_update_hint')}
+        <CardContent className="pt-6 space-y-5">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-900">
+              Você será desconectado após alterar a senha. A nova senha será usada no próximo acesso.
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Nova Senha */}
-            <div className="space-y-2">
-              <label htmlFor="new-password" className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-                <Key className="w-4 h-4" aria-hidden={true} /> {t('settings.password_new_label')}
+            <div className="space-y-2.5">
+              <label htmlFor="new-password" className="text-sm font-semibold text-slate-700">
+                Nova Senha
               </label>
               <div className="flex gap-2">
                 <Input
@@ -225,23 +235,23 @@ export default function SettingsPage() {
                   type={showNewPassword ? 'text' : 'password'}
                   value={passwordForm.newPassword}
                   onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                  placeholder={t('settings.password_new_placeholder')}
-                  className="bg-white flex-1"
+                  placeholder="••••••••••••••••"
+                  className="bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 flex-1"
                 />
                 <button
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  aria-label={showNewPassword ? t('settings.password_new_hide') : t('settings.password_new_show')}
-                  className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition"
+                  aria-label={showNewPassword ? 'Ocultar' : 'Mostrar'}
+                  className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition text-slate-600"
                 >
-                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
             {/* Confirmar Senha */}
-            <div className="space-y-2">
-              <label htmlFor="confirm-password" className="text-sm font-semibold text-slate-600 flex items-center gap-2">
-                <Key className="w-4 h-4" aria-hidden={true} /> {t('settings.password_confirm_label')}
+            <div className="space-y-2.5">
+              <label htmlFor="confirm-password" className="text-sm font-semibold text-slate-700">
+                Confirmar Senha
               </label>
               <div className="flex gap-2">
                 <Input
@@ -249,81 +259,92 @@ export default function SettingsPage() {
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={passwordForm.confirmPassword}
                   onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                  placeholder={t('settings.password_confirm_placeholder')}
-                  className="bg-white flex-1"
+                  placeholder="••••••••••••••••"
+                  className="bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 flex-1"
                   onKeyPress={e => e.key === 'Enter' && handleChangePassword()}
                 />
                 <button
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label={showConfirmPassword ? t('settings.password_confirm_hide') : t('settings.password_confirm_show')}
-                  className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition"
+                  aria-label={showConfirmPassword ? 'Ocultar' : 'Mostrar'}
+                  className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition text-slate-600"
                 >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            {/* Feedback de validação */}
-            {passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
-              <div className="p-3 bg-red-100 border border-red-300 rounded text-sm text-red-700">
-                ⚠️ {t('settings.password_validation_mismatch')}
-              </div>
-            )}
+            {/* Validation Feedback */}
+            {passwordForm.newPassword || passwordForm.confirmPassword ? (
+              <div className="space-y-2">
+                {passwordForm.newPassword && passwordForm.newPassword.length >= 6 ? (
+                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                    <CheckCircle2 size={18} />
+                    Comprimento adequado
+                  </div>
+                ) : passwordForm.newPassword ? (
+                  <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700">
+                    <AlertCircle size={18} />
+                    Mínimo 6 caracteres
+                  </div>
+                ) : null}
 
-            {passwordForm.newPassword && passwordForm.newPassword.length < 6 && (
-              <div className="p-3 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-700">
-                ⚠️ {t('settings.password_validation_short')}
+                {passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword ? (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                    <XCircle size={18} />
+                    As senhas não correspondem
+                  </div>
+                ) : passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword && passwordForm.newPassword.length >= 6 ? (
+                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                    <CheckCircle2 size={18} />
+                    Senhas coincidem
+                  </div>
+                ) : null}
               </div>
-            )}
+            ) : null}
 
-            {passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword && passwordForm.newPassword.length >= 6 && (
-              <div className="p-3 bg-green-100 border border-green-300 rounded text-sm text-green-700">
-                ✅ {t('settings.password_validation_match')}
-              </div>
-            )}
-
-            {/* Botão de confirmar */}
-            <div className="pt-2 flex justify-end">
+            {/* Button */}
+            <div className="flex justify-end pt-3">
               <Button
                 onClick={handleChangePassword}
                 disabled={changingPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordForm.newPassword !== passwordForm.confirmPassword || passwordForm.newPassword.length < 6}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {changingPassword ? t('settings.password_button_changing') : t('settings.password_button_change')}
+                {changingPassword ? 'Alterando...' : 'Alterar Senha'}
               </Button>
             </div>
-          </div>
-
-          <div className="pt-4 border-t border-blue-200/50">
-            <p className="text-xs text-slate-600">
-              {t('settings.password_security_note')}
-            </p>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 max-w-3xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-orange-700">
-            <AlertCircle className="w-5 h-5" />
-            Testar Sentry (Dev/Testing)
+      {/* Sentry Test Section */}
+      <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
+          <CardTitle className="flex items-center gap-3 text-slate-900 text-lg">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-amber-700" />
+            </div>
+            Teste de Monitoramento
           </CardTitle>
+          <p className="text-sm text-slate-600 mt-1">Validar que o Sentry está capturando erros corretamente</p>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-slate-700 mb-4">
-            Clique no botão abaixo para disparar um erro de teste e verificar se o Sentry está capturando corretamente.
-          </p>
+        <CardContent className="pt-6">
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-5">
+            <p className="text-sm text-amber-900">
+              Clique no botão abaixo para disparar um erro de teste. Ele será registrado no dashboard do Sentry para validação.
+            </p>
+          </div>
           <Button
             onClick={() => {
               Sentry.captureException(new Error('Teste Sentry - erro proposital para validação'));
-              toast.success('Erro enviado para Sentry');
+              toast.success('Erro enviado para Sentry - verifique o dashboard');
             }}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
+            className="bg-amber-600 hover:bg-amber-700 text-white"
           >
             🧪 Disparar Erro de Teste
           </Button>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
