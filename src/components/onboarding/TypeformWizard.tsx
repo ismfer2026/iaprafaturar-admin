@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useI18n } from '@/i18n';
 
 export type QuestionType = 'text' | 'tel' | 'date' | 'select' | 'textarea' | 'multiselect';
 
@@ -24,6 +25,7 @@ interface TypeformWizardProps {
 }
 
 export function TypeformWizard({ title, questions, onComplete, isSubmitting }: TypeformWizardProps) {
+  const { t } = useI18n()
   const[currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [error, setError] = useState('');
@@ -77,7 +79,7 @@ export function TypeformWizard({ title, questions, onComplete, isSubmitting }: T
         return (
           <Select value={value} onValueChange={onChangeSelect}>
             <SelectTrigger className="w-full text-xl sm:text-2xl h-14 bg-transparent border-b-2 border-t-0 border-l-0 border-r-0 border-slate-300 rounded-none focus:ring-0 focus:border-primary px-0">
-              <SelectValue placeholder="Selecione uma opção..." />
+              <SelectValue placeholder={t('onboarding.select_placeholder')} />
             </SelectTrigger>
             <SelectContent>
               {question.options?.map(opt => (
@@ -94,7 +96,7 @@ export function TypeformWizard({ title, questions, onComplete, isSubmitting }: T
             ref={inputRef as any}
             value={value} 
             onChange={onChangeText}
-            placeholder="Digite sua resposta aqui..."
+            placeholder={t('onboarding.response_placeholder')}
             className="w-full text-xl sm:text-2xl min-h-[150px] bg-transparent border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-primary p-4 resize-none"
           />
         );
@@ -106,7 +108,7 @@ export function TypeformWizard({ title, questions, onComplete, isSubmitting }: T
             value={value} 
             onChange={onChangeText}
             onKeyDown={handleKeyDown}
-            placeholder="Digite sua resposta..."
+            placeholder={t('onboarding.response_placeholder_short')}
             className="w-full text-2xl sm:text-4xl h-16 bg-transparent border-b-2 border-t-0 border-l-0 border-r-0 border-slate-300 rounded-none focus:ring-0 focus:border-primary px-0 placeholder:text-slate-300"
           />
         );

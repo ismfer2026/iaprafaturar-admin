@@ -587,4 +587,14 @@ export const esAL = {
     error_sending: "Error al comunicarse con Nexus",
     empty_state: "No se encontraron leads",
   },
+  onboarding: {
+    professional_name_placeholder: "Ej: Ana Silva",
+    business_name_placeholder: "Ej: Clínica Sonrisa",
+    service_name_placeholder: "Ej: Evaluación Inicial",
+    address_placeholder: "Ej: Av. Paulista, 1000 - Sala 45, São Paulo - SP",
+    pix_key_placeholder: "Ej: CNPJ, Email, Celular...",
+    select_placeholder: "Selecciona una opción...",
+    response_placeholder: "Escribe tu respuesta aquí...",
+    response_placeholder_short: "Escribe tu respuesta...",
+  },
 } satisfies TranslationTree;

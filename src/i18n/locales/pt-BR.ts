@@ -587,4 +587,14 @@ export const ptBR = {
     error_sending: "Erro ao falar com Nexus",
     empty_state: "Nenhum lead encontrado",
   },
+  onboarding: {
+    professional_name_placeholder: "Ex: Ana Silva",
+    business_name_placeholder: "Ex: Clínica Sorriso",
+    service_name_placeholder: "Ex: Avaliação Inicial",
+    address_placeholder: "Ex: Av. Paulista, 1000 - Sala 45, São Paulo - SP",
+    pix_key_placeholder: "Ex: CNPJ, Email, Celular...",
+    select_placeholder: "Selecione uma opção...",
+    response_placeholder: "Digite sua resposta aqui...",
+    response_placeholder_short: "Digite sua resposta...",
+  },
 } satisfies TranslationTree;

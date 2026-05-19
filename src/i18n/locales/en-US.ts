@@ -587,4 +587,14 @@ export const enUS = {
     error_sending: "Error communicating with Nexus",
     empty_state: "No leads found",
   },
+  onboarding: {
+    professional_name_placeholder: "Ex: Ana Silva",
+    business_name_placeholder: "Ex: Smile Clinic",
+    service_name_placeholder: "Ex: Initial Assessment",
+    address_placeholder: "Ex: Paulista Ave, 1000 - Room 45, São Paulo - SP",
+    pix_key_placeholder: "Ex: CNPJ, Email, Mobile...",
+    select_placeholder: "Select an option...",
+    response_placeholder: "Type your answer here...",
+    response_placeholder_short: "Type your answer...",
+  },
 } satisfies TranslationTree;

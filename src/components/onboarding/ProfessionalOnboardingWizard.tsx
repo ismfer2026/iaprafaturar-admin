@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { useI18n } from '@/i18n';
 
 export interface OnboardingData {
   name: string;
@@ -33,6 +34,7 @@ interface Props {
 }
 
 export function ProfessionalOnboardingWizard({ onComplete, isSubmitting }: Props) {
+  const { t } = useI18n()
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState('');
   const [data, setData] = useState<OnboardingData>({
@@ -54,11 +56,11 @@ export function ProfessionalOnboardingWizard({ onComplete, isSubmitting }: Props
         <div className="space-y-6 w-full max-w-md">
           <div>
             <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Seu Nome / Responsável</label>
-            <Input ref={inputRef} value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0 mt-2" placeholder="Ex: Ana Silva" />
+            <Input ref={inputRef} value={data.name} onChange={(e) => setData({ ...data, name: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0 mt-2" placeholder={t('onboarding.professional_name_placeholder')} />
           </div>
           <div>
             <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Nome da Clínica / Consultório</label>
-            <Input value={data.business_name} onChange={(e) => setData({ ...data, business_name: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0 mt-2" placeholder="Ex: Clínica Sorriso" />
+            <Input value={data.business_name} onChange={(e) => setData({ ...data, business_name: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0 mt-2" placeholder={t('onboarding.business_name_placeholder')} />
           </div>
         </div>
       )
@@ -178,7 +180,7 @@ export function ProfessionalOnboardingWizard({ onComplete, isSubmitting }: Props
         <div className="space-y-6 w-full max-w-md">
           <div>
             <label className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Nome do Serviço</label>
-            <Input ref={inputRef} value={data.service_name} onChange={(e) => setData({ ...data, service_name: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0 mt-2" placeholder="Ex: Avaliação Inicial" />
+            <Input ref={inputRef} value={data.service_name} onChange={(e) => setData({ ...data, service_name: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0 mt-2" placeholder={t('onboarding.service_name_placeholder')} />
           </div>
           <div className="flex gap-6">
             <div className="flex-1">
@@ -220,7 +222,7 @@ export function ProfessionalOnboardingWizard({ onComplete, isSubmitting }: Props
       icon: MapPin,
       content: (
         <div className="w-full max-w-lg">
-          <Textarea value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder="Ex: Av. Paulista, 1000 - Sala 45, São Paulo - SP" className="text-xl min-h-[120px] bg-transparent border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-[#0D6E6E] p-4 resize-none" />
+          <Textarea value={data.address} onChange={(e) => setData({ ...data, address: e.target.value })} placeholder={t('onboarding.address_placeholder')} className="text-xl min-h-[120px] bg-transparent border-2 border-slate-200 rounded-xl focus:ring-0 focus:border-[#0D6E6E] p-4 resize-none" />
         </div>
       )
     },
@@ -249,7 +251,7 @@ export function ProfessionalOnboardingWizard({ onComplete, isSubmitting }: Props
       icon: DollarSign,
       content: (
         <div className="w-full max-w-md space-y-2">
-          <Input ref={inputRef} value={data.pix_key} onChange={(e) => setData({ ...data, pix_key: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0" placeholder="Ex: CNPJ, Email, Celular..." />
+          <Input ref={inputRef} value={data.pix_key} onChange={(e) => setData({ ...data, pix_key: e.target.value })} className="text-2xl h-14 bg-transparent border-0 border-b-2 border-slate-300 rounded-none focus:ring-0 focus:border-[#0D6E6E] px-0" placeholder={t('onboarding.pix_key_placeholder')} />
         </div>
       )
     },
