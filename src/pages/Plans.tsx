@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { Plus, Edit2, Users, ToggleLeft, ToggleRight, X, Check, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
+import { useI18n } from '@/i18n'
 
 // ══════════════════════════════════════════════════════════
 // TIPOS
@@ -116,6 +117,7 @@ function AccordionSection({ title, id, open, onToggle, children }: any) {
 // CALCULADORA FINANCEIRA
 // ══════════════════════════════════════════════════════════
 function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
+  const { t } = useI18n()
   const[custos, setCustos] = useState<Custos>(DEFAULT_CUSTOS)
   const[planos, setPlanos] = useState<Planos>(planoPrecos)
   const[premissas, setPremissas] = useState<Premissas>(DEFAULT_PREMISSAS)
@@ -179,16 +181,16 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <KpiCard label="Custo Fixo/mês" value={fmtBRL(calc.fixo)} sub="infraestrutura base" color="#dc2626" bg="#fef2f2" />
-        <KpiCard label="Custo Var./usuário" value={fmtBRL(calc.cvTotal, 2)} sub="WhatsApp + IA + storage" color="#d97706" bg="#fffbeb" />
-        <KpiCard label="MRR projetado (12m)" value={fmtBRL(calc.mrrFinal)} sub="com premissas atuais" color="#0D6E6E" bg="#f0fdfa" />
-        <KpiCard label="Breakeven" value={calc.mesToBreakeven} sub="1º mês lucrativo" color="#7c3aed" bg="#f5f3ff" />
+        <KpiCard label={t('plans.calc_kpi_fixed_cost')} value={fmtBRL(calc.fixo)} sub={t('plans.calc_kpi_fixed_cost_sub')} color="#dc2626" bg="#fef2f2" />
+        <KpiCard label={t('plans.calc_kpi_var_cost')} value={fmtBRL(calc.cvTotal, 2)} sub={t('plans.calc_kpi_var_cost_sub')} color="#d97706" bg="#fffbeb" />
+        <KpiCard label={t('plans.calc_kpi_mrr_projected')} value={fmtBRL(calc.mrrFinal)} sub={t('plans.calc_kpi_mrr_projected_sub')} color="#0D6E6E" bg="#f0fdfa" />
+        <KpiCard label={t('plans.calc_kpi_breakeven')} value={calc.mesToBreakeven} sub={t('plans.calc_kpi_breakeven_sub')} color="#7c3aed" bg="#f5f3ff" />
       </div>
 
       {/* Seção Custos */}
-      <AccordionSection title="📦 Custos de Infraestrutura" id="custos" open={openSection === 'custos'} onToggle={toggle}>
+      <AccordionSection title={t('plans.calc_section_infra')} id="custos" open={openSection === 'custos'} onToggle={toggle}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', margin: 0 }}>Custos Fixos Mensais</p>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', margin: 0 }}>{t('plans.calc_fixed_costs_title')}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             <InputCalc label="Supabase" value={custos.supabase} onChange={(v: number) => setCustos(p => ({ ...p, supabase: v }))} prefix="R$" note="Pro: ~R$119/mês" />
             <InputCalc label="Netlify/Vercel" value={custos.netlify} onChange={(v: number) => setCustos(p => ({ ...p, netlify: v }))} prefix="R$" note="Pro: ~R$99/mês" />
@@ -201,7 +203,7 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
             <span style={{ fontSize: 13, fontWeight: 700, color: '#dc2626' }}>Total Fixo/mês</span>
             <span style={{ fontSize: 16, fontWeight: 900, color: '#dc2626' }}>{fmtBRL(calc.fixo)}</span>
           </div>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', margin: '4px 0 0' }}>Custos Variáveis por Usuário</p>
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', textTransform: 'uppercase', margin: '4px 0 0' }}>{t('plans.calc_var_costs_title')}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
             <InputCalc label="WhatsApp — custo/mensagem" value={custos.whatsappPorMsg} onChange={(v: number) => setCustos(p => ({ ...p, whatsappPorMsg: v }))} prefix="R$" step={0.001} note="360dialog ~R$0,04/msg" />
             <InputCalc label="WhatsApp — msgs/usuário/mês" value={custos.msgsPorUsuario} onChange={(v: number) => setCustos(p => ({ ...p, msgsPorUsuario: v }))} suffix="msgs" />

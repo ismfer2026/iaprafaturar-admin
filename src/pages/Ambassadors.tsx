@@ -4,6 +4,7 @@ import {
   Search, ChevronDown, ChevronUp, CheckCircle, Users,
   DollarSign, TrendingUp, Plus, X, Copy, Clock
 } from 'lucide-react'
+import { useI18n } from '@/i18n'
 
 const BASE_SIGNUP_URL = "https://app.iaprafaturar.com.br/signup";
 
@@ -59,6 +60,7 @@ function getBadge(active: number): string {
 }
 
 export function AmbassadorsPage() {
+  const { t } = useI18n()
   const [partners, setPartners] = useState<AffiliatePartner[]>([])
   const [filtered, setFiltered] = useState<AffiliatePartner[]>([])
   const [loading, setLoading] = useState(true)
@@ -226,7 +228,7 @@ export function AmbassadorsPage() {
   // ✅ CORREÇÃO 2: handleCreatePartner com status: 'ativo'
   const handleCreatePartner = async () => {
     if (!newPartnerForm.name || !newPartnerForm.email) {
-      alert('Nome e E-mail são obrigatórios.');
+      alert(t('ambassadors.modal_required'));
       return;
     }
 
@@ -253,12 +255,12 @@ export function AmbassadorsPage() {
         throw error;
       }
 
-      alert('Parceiro cadastrado com sucesso!');
+      alert(t('ambassadors.modal_success'));
       setShowNewPartnerModal(false);
       setNewPartnerForm({ name: '', email: '', pix_key: '', commission_pct: 15, phone_whatsapp: '' });
       fetchPartners();
     } catch (err: any) {
-      alert('Erro ao salvar parceiro: ' + (err.message || 'Tente novamente'));
+      alert(t('ambassadors.modal_error') + (err.message || 'Tente novamente'));
     } finally {
       setIsSubmitting(false);
     }
@@ -342,18 +344,18 @@ export function AmbassadorsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: 40 }}>
 
       <div>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>Afiliados e Parceiros</h1>
-        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Gerencie o programa B2B de indicações, comissões e pagamentos via PIX.</p>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>{t('ambassadors.title')}</h1>
+        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>{t('ambassadors.subtitle')}</p>
       </div>
 
       {/* KPIs */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
         {[
-          { label: 'Parceiros Ativos', value: totalActive, icon: <CheckCircle size={20} color="#16a34a" />, bg: '#f0fdf4', color: '#16a34a' },
-          { label: 'Aprovações Pendentes', value: totalPending, icon: <Users size={20} color="#d97706" />, bg: '#fffbeb', color: '#d97706' },
-          { label: 'Conversões Ativas', value: totalReferrals, icon: <TrendingUp size={20} color="#0D6E6E" />, bg: '#f0fdfa', color: '#0D6E6E' },
-          { label: 'Trials Aguardando Ativação', value: trialCount, icon: <Clock size={20} color="#0284c7" />, bg: '#f0f9ff', color: '#0284c7' },
-          { label: 'Saldo PIX a Pagar', value: `R$ ${totalBalancePix.toFixed(2)}`, icon: <DollarSign size={20} color="#7c3aed" />, bg: '#f5f3ff', color: '#7c3aed' },
+          { label: t('ambassadors.kpi_active_partners'), value: totalActive, icon: <CheckCircle size={20} color="#16a34a" />, bg: '#f0fdf4', color: '#16a34a' },
+          { label: t('ambassadors.kpi_pending_approvals'), value: totalPending, icon: <Users size={20} color="#d97706" />, bg: '#fffbeb', color: '#d97706' },
+          { label: t('ambassadors.kpi_active_conversions'), value: totalReferrals, icon: <TrendingUp size={20} color="#0D6E6E" />, bg: '#f0fdfa', color: '#0D6E6E' },
+          { label: t('ambassadors.kpi_trials'), value: trialCount, icon: <Clock size={20} color="#0284c7" />, bg: '#f0f9ff', color: '#0284c7' },
+          { label: t('ambassadors.kpi_pix_balance'), value: `R$ ${totalBalancePix.toFixed(2)}`, icon: <DollarSign size={20} color="#7c3aed" />, bg: '#f5f3ff', color: '#7c3aed' },
         ].map(({ label, value, icon, bg, color }) => (
           <div key={label} style={{ background: '#fff', borderRadius: 12, border: '1px solid #e2e8f0', padding: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -384,35 +386,35 @@ export function AmbassadorsPage() {
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por nome, e-mail ou código..."
+            placeholder={t('ambassadors.search_placeholder')}
             style={{ width: '100%', paddingLeft: 36, paddingRight: 12, paddingTop: 9, paddingBottom: 9, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', background: '#fff', boxSizing: 'border-box' }}
           />
         </div>
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           style={{ padding: '9px 14px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', cursor: 'pointer' }}>
-          <option value="all">Todos os status</option>
-          <option value="pendente">Pendente</option>
-          <option value="ativo">Ativo</option>
-          <option value="suspenso">Suspenso</option>
-          <option value="inativo">Inativo</option>
+          <option value="all">{t('ambassadors.filter_status_all')}</option>
+          <option value="pendente">{t('ambassadors.filter_status_pending')}</option>
+          <option value="ativo">{t('ambassadors.filter_status_active')}</option>
+          <option value="suspenso">{t('ambassadors.filter_status_suspended')}</option>
+          <option value="inativo">{t('ambassadors.filter_status_inactive')}</option>
         </select>
         <select value={filterBadge} onChange={e => setFilterBadge(e.target.value)}
           style={{ padding: '9px 14px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, background: '#fff', outline: 'none', cursor: 'pointer' }}>
-          <option value="all">Todos os badges</option>
+          <option value="all">{t('ambassadors.filter_badge_all')}</option>
           {Object.entries(badgeInfo).map(([key, b]) => (
             <option key={key} value={key}>{b.emoji} {b.label} ({b.min}+)</option>
           ))}
         </select>
-        
+
         {/* Botão Novo Parceiro */}
-        <button 
+        <button
           onClick={() => setShowNewPartnerModal(true)}
           style={{ background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          <Plus size={16} /> Novo Parceiro
+          <Plus size={16} /> {t('ambassadors.new_partner_btn')}
         </button>
-        
-        <span style={{ fontSize: 13, color: '#64748b', marginLeft: 'auto', fontWeight: 600 }}>{filtered.length} Afiliado(s)</span>
+
+        <span style={{ fontSize: 13, color: '#64748b', marginLeft: 'auto', fontWeight: 600 }}>{t('ambassadors.affiliated_count', { count: filtered.length })}</span>
       </div>
 
       {/* Tabela */}
@@ -420,15 +422,25 @@ export function AmbassadorsPage() {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 60, gap: 12 }}>
             <div style={{ width: 24, height: 24, border: '3px solid #e2e8f0', borderTopColor: '#0D6E6E', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <p style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>Carregando dados de parceiros...</p>
+            <p style={{ color: '#64748b', fontSize: 13, fontWeight: 500 }}>{t('ambassadors.loading')}</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>Nenhum parceiro ou afiliado encontrado.</div>
+          <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>{t('ambassadors.no_partners_found')}</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ background: '#f8fafc' }}>
-                {['Afiliado', 'Código', 'Badge', 'Status', 'Conversões', 'Comissão', 'Saldo a Pagar', 'Ações', ''].map(h => (
+                {[
+                  t('ambassadors.table_affiliate'),
+                  t('ambassadors.table_code'),
+                  t('ambassadors.table_badge'),
+                  t('ambassadors.table_status'),
+                  t('ambassadors.table_conversions'),
+                  t('ambassadors.table_commission'),
+                  t('ambassadors.table_balance'),
+                  t('ambassadors.table_actions'),
+                  ''
+                ].map(h => (
                   <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', borderBottom: '1px solid #e2e8f0' }}>{h}</th>
                 ))}
               </tr>
@@ -472,7 +484,7 @@ export function AmbassadorsPage() {
                               disabled={toggling === amb.id}
                               style={{ padding: '5px 12px', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >
-                              Aprovar
+                              {t('ambassadors.btn_approve')}
                             </button>
                           )}
                           {amb.status === 'ativo' && (
@@ -481,7 +493,7 @@ export function AmbassadorsPage() {
                               disabled={toggling === amb.id}
                               style={{ padding: '5px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >
-                              Suspender
+                              {t('ambassadors.btn_suspend')}
                             </button>
                           )}
                           {amb.status === 'suspenso' && (
@@ -490,7 +502,7 @@ export function AmbassadorsPage() {
                               disabled={toggling === amb.id}
                               style={{ padding: '5px 12px', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >
-                              Reativar
+                              {t('ambassadors.btn_reactivate')}
                             </button>
                           )}
                           {(amb.pending_payment || 0) > 0 && (
@@ -499,18 +511,18 @@ export function AmbassadorsPage() {
                               disabled={processingPix === amb.id}
                               style={{ padding: '5px 12px', background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                             >
-                              PIX Pago
+                              {t('ambassadors.btn_pix_paid')}
                             </button>
                           )}
                           <button
-                            onClick={() => { 
-                              navigator.clipboard.writeText(partnerLink); 
-                              alert('Link copiado!'); 
+                            onClick={() => {
+                              navigator.clipboard.writeText(partnerLink);
+                              alert(t('ambassadors.btn_copy_success'));
                             }}
                             style={{ padding: '5px 8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, color: '#0D6E6E' }}
                             title="Copiar link de divulgação"
                           >
-                            <Copy size={14} /> Link
+                            <Copy size={14} /> {t('ambassadors.btn_copy_link')}
                           </button>
                         </div>
                       </td>
@@ -529,18 +541,18 @@ export function AmbassadorsPage() {
 
                             {/* Info do embaixador */}
                             <div>
-                              <p style={{ fontSize: 13, fontWeight: 800, color: '#0D6E6E', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 8 }}><Users size={16}/> Detalhes do Parceiro</p>
-                              
+                              <p style={{ fontSize: 13, fontWeight: 800, color: '#0D6E6E', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 8 }}><Users size={16}/> {t('ambassadors.detail_title')}</p>
+
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 12px', background: '#fff', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0' }}>
                                 {[
-                                  { label: 'Chave PIX', value: amb.pix_key ?? 'Não informada' },
-                                  { label: 'Comissão', value: `${amb.commission_pct || 0}% por mensalidade` },
-                                  { label: 'Total de conversões', value: amb.total_conversions || 0 },
-                                  { label: 'Conversões ativas', value: amb.active_conversions || 0 },
-                                  { label: 'Saldo pendente (PIX)', value: `R$ ${(amb.pending_payment || 0).toFixed(2)}` },
-                                  { label: 'Total pago (Vida)', value: `R$ ${(amb.total_earned || 0).toFixed(2)}` },
-                                  { label: 'Ranking/Badge', value: `${badgeInfo[getBadge(amb.active_conversions || 0)].emoji} ${badgeInfo[getBadge(amb.active_conversions || 0)].label}` },
-                                  { label: 'Parceiro desde', value: new Date(amb.created_at).toLocaleDateString('pt-BR') },
+                                  { label: t('ambassadors.detail_pix_key'), value: amb.pix_key ?? 'Não informada' },
+                                  { label: t('ambassadors.detail_commission'), value: `${amb.commission_pct || 0}% por mensalidade` },
+                                  { label: t('ambassadors.detail_total_conversions'), value: amb.total_conversions || 0 },
+                                  { label: t('ambassadors.detail_active_conversions'), value: amb.active_conversions || 0 },
+                                  { label: t('ambassadors.detail_pending_balance'), value: `R$ ${(amb.pending_payment || 0).toFixed(2)}` },
+                                  { label: t('ambassadors.detail_total_earned'), value: `R$ ${(amb.total_earned || 0).toFixed(2)}` },
+                                  { label: t('ambassadors.detail_badge'), value: `${badgeInfo[getBadge(amb.active_conversions || 0)].emoji} ${badgeInfo[getBadge(amb.active_conversions || 0)].label}` },
+                                  { label: t('ambassadors.detail_member_since'), value: new Date(amb.created_at).toLocaleDateString('pt-BR') },
                                 ].map(({ label, value }) => (
                                   <div key={label}>
                                     <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', margin: '0 0 4px' }}>{label}</p>
@@ -548,22 +560,22 @@ export function AmbassadorsPage() {
                                   </div>
                                 ))}
                               </div>
-                              
+
                               {/* Seção de Link de Divulgação */}
                               <div style={{ marginTop: 16, padding: '12px 16px', background: '#f8fafc', borderRadius: 8, border: '1px dashed #cbd5e1' }}>
-                                <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', margin: '0 0 8px' }}>Link de Divulgação</p>
+                                <p style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', margin: '0 0 8px' }}>{t('ambassadors.detail_link_title')}</p>
                                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                                   <code style={{ flex: 1, background: '#fff', padding: '8px 12px', borderRadius: 6, fontSize: 12, color: '#0D6E6E', border: '1px solid #e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {partnerLink}
                                   </code>
-                                  <button 
-                                    onClick={() => { 
-                                      navigator.clipboard.writeText(partnerLink); 
-                                      alert('Link copiado!'); 
+                                  <button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(partnerLink);
+                                      alert(t('ambassadors.btn_copy_success'));
                                     }}
                                     style={{ padding: '8px 12px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
                                   >
-                                    <Copy size={14} /> Copiar
+                                    <Copy size={14} /> {t('ambassadors.btn_copy_link')}
                                   </button>
                                 </div>
                               </div>
@@ -571,26 +583,26 @@ export function AmbassadorsPage() {
 
                             {/* Lista de indicados */}
                             <div>
-                              <p style={{ fontSize: 13, fontWeight: 800, color: '#0D6E6E', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={16}/> Profissionais Indicados ({referrals.length})</p>
-                              
+                              <p style={{ fontSize: 13, fontWeight: 800, color: '#0D6E6E', margin: '0 0 16px', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 8 }}><DollarSign size={16}/> {t('ambassadors.detail_title')} ({referrals.length})</p>
+
                               {loadingReferrals ? (
-                                <p style={{ color: '#94a3b8', fontSize: 13 }}>Carregando dados da carteira...</p>
+                                <p style={{ color: '#94a3b8', fontSize: 13 }}>{t('ambassadors.referral_loading')}</p>
                               ) : referrals.length === 0 ? (
                                 <div style={{ background: '#fff', border: '1px dashed #cbd5e1', borderRadius: 12, padding: 30, textAlign: 'center' }}>
-                                  <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>Nenhuma assinatura ou cadastro concluído pelo link deste parceiro ainda.</p>
+                                  <p style={{ color: '#64748b', fontSize: 13, margin: 0 }}>{t('ambassadors.referral_empty')}</p>
                                 </div>
                               ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 300, overflowY: 'auto' }}>
                                   {referrals.map(r => (
                                     <div key={r.id} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                       <div>
-                                        <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0 }}>{r.referred?.name ?? 'Clínica Desconhecida'}</p>
+                                        <p style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0 }}>{r.referred?.name ?? t('ambassadors.referral_unknown_clinic')}</p>
                                         <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>{r.referred?.email ?? '—'}</p>
                                         {r.plan_slug && <p style={{ fontSize: 11, fontWeight: 600, color: '#0D6E6E', margin: '4px 0 0' }}>Plano: {r.plan_slug}</p>}
                                       </div>
                                       <div style={{ textAlign: 'right' }}>
                                         <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 12, background: r.status === 'ativo' ? '#f0fdf4' : '#fef2f2', color: r.status === 'ativo' ? '#16a34a' : '#dc2626' }}>
-                                          {r.status === 'ativo' ? 'Rendendo Comissão' : 'Inativo / Cancelou'}
+                                          {r.status === 'ativo' ? t('ambassadors.referral_status_active') : t('ambassadors.referral_status_inactive')}
                                         </span>
                                         {r.commission_monthly_value && (
                                           <p style={{ fontSize: 12, fontWeight: 700, color: '#16a34a', margin: '6px 0 0' }}>+ R$ {r.commission_monthly_value.toFixed(2)}/mês</p>
@@ -618,40 +630,40 @@ export function AmbassadorsPage() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(2px)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowNewPartnerModal(false)}>
           <div style={{ background: '#fff', borderRadius: 16, padding: 32, width: 400, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Novo Parceiro B2B</h2>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#0f172a' }}>{t('ambassadors.modal_new_partner')}</h2>
               <button onClick={() => setShowNewPartnerModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
             </div>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Nome do Parceiro *</label>
-                <input value={newPartnerForm.name} onChange={e => setNewPartnerForm({...newPartnerForm, name: e.target.value})} placeholder="Ex: Agência XYZ" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('ambassadors.modal_name')} *</label>
+                <input value={newPartnerForm.name} onChange={e => setNewPartnerForm({...newPartnerForm, name: e.target.value})} placeholder={t('ambassadors.modal_name_placeholder')} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>E-mail *</label>
-                <input type="email" value={newPartnerForm.email} onChange={e => setNewPartnerForm({...newPartnerForm, email: e.target.value})} placeholder="contato@agencia.com" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('ambassadors.modal_email')} *</label>
+                <input type="email" value={newPartnerForm.email} onChange={e => setNewPartnerForm({...newPartnerForm, email: e.target.value})} placeholder={t('ambassadors.modal_email_placeholder')} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>WhatsApp (com DDD)</label>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('ambassadors.modal_whatsapp')}</label>
                 <input
                   value={newPartnerForm.phone_whatsapp}
                   onChange={e => setNewPartnerForm({...newPartnerForm, phone_whatsapp: e.target.value})}
-                  placeholder="11999999999"
+                  placeholder={t('ambassadors.modal_whatsapp_placeholder')}
                   style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }}
                 />
               </div>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Chave PIX</label>
-                  <input 
-                    value={newPartnerForm.pix_key} 
-                    onChange={e => setNewPartnerForm({...newPartnerForm, pix_key: e.target.value})} 
-                    placeholder="CPF/CNPJ/Email" 
-                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }} 
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('ambassadors.modal_pix')}</label>
+                  <input
+                    value={newPartnerForm.pix_key}
+                    onChange={e => setNewPartnerForm({...newPartnerForm, pix_key: e.target.value})}
+                    placeholder={t('ambassadors.modal_pix_placeholder')}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, boxSizing: 'border-box' }}
                   />
                 </div>
                 <div style={{ width: 120 }}>
-                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Comissão (%)</label>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{t('ambassadors.modal_commission')}</label>
                   <input
                     type="number"
                     value={newPartnerForm.commission_pct}
@@ -660,23 +672,23 @@ export function AmbassadorsPage() {
                   />
                 </div>
               </div>
-              
-              <button 
-                onClick={handleCreatePartner} 
+
+              <button
+                onClick={handleCreatePartner}
                 disabled={issubmitting}
-                style={{ 
-                  marginTop: 8, 
-                  padding: '12px', 
-                  background: '#0D6E6E', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: 8, 
-                  fontWeight: 600, 
+                style={{
+                  marginTop: 8,
+                  padding: '12px',
+                  background: '#0D6E6E',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontWeight: 600,
                   cursor: issubmitting ? 'not-allowed' : 'pointer',
                   opacity: issubmitting ? 0.6 : 1
                 }}
               >
-                {issubmitting ? 'Salvando...' : 'Cadastrar e Gerar Link'}
+                {issubmitting ? t('ambassadors.modal_saving') : t('ambassadors.modal_save')}
               </button>
             </div>
           </div>
