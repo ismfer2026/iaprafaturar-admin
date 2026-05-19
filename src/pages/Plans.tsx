@@ -325,6 +325,7 @@ function FinancialCalculator({ planoPrecos }: { planoPrecos: Planos }) {
 // PÁGINA PRINCIPAL
 // ══════════════════════════════════════════════════════════
 export function PlansPage() {
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState<'planos' | 'calculadora'>('planos')
   const [plans, setPlans] = useState<Plan[]>([])
   const[loading, setLoading] = useState(true)
@@ -673,7 +674,7 @@ export function PlansPage() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Descrição</label>
-                <textarea value={editingPlan.description ?? ''} rows={2} placeholder="Descreva o plano..."
+                <textarea value={editingPlan.description ?? ''} rows={2} placeholder={t('plans.modal_description_placeholder')}
                   onChange={e => setEditingPlan(prev => ({ ...prev!, description: e.target.value }))}
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box', resize: 'none' }} />
               </div>
@@ -682,7 +683,7 @@ export function PlansPage() {
                 <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                   <input value={newFeature} onChange={e => setNewFeature(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && newFeature.trim()) { setEditingPlan(prev => ({ ...prev!, features:[...(prev!.features || []), newFeature.trim()] })); (e.target as HTMLInputElement).value = ''; } }}
-                    placeholder="Digite uma feature e pressione Enter..."
+                    placeholder={t('plans.modal_feature_placeholder')}
                     style={{ flex: 1, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none' }} />
                   <button onClick={() => { if (newFeature.trim()) setEditingPlan(prev => ({ ...prev!, features: [...(prev!.features || []), newFeature.trim()] })) }}
                     style={{ padding: '8px 14px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>

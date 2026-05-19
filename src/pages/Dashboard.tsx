@@ -190,10 +190,10 @@ export function Dashboard() {
           <code style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: 8, fontSize: 12, color: '#0D6E6E', fontWeight: 700, userSelect: 'all', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
             {ADMIN_REGISTRATION_LINK}
           </code>
-          <button 
-            onClick={() => { 
-              navigator.clipboard.writeText(ADMIN_REGISTRATION_LINK); 
-              toast.success('Link de Onboarding copiado!'); 
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(ADMIN_REGISTRATION_LINK);
+              toast.success(t('dashboard.toast_link_copied'));
             }} 
             style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: 'all 0.2s' }}
             onMouseOver={e => e.currentTarget.style.borderColor = '#0D6E6E'}

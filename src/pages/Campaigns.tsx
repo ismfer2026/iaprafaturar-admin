@@ -473,7 +473,7 @@ export function CampaignsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Nome da campanha *</label>
-                  <input value={editing.name || ''} placeholder="Ex: Lançamento Produto AN — Junho"
+                  <input value={editing.name || ''} placeholder={t('campaigns.modal_name_placeholder')}
                     onChange={e => setEditing(p => ({ ...p!, name: e.target.value }))}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                 </div>
@@ -491,7 +491,7 @@ export function CampaignsPage() {
               {/* Descrição */}
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Descrição interna</label>
-                <input value={editing.description || ''} placeholder="Objetivo desta campanha..."
+                <input value={editing.description || ''} placeholder={t('campaigns.modal_description_placeholder')}
                   onChange={e => setEditing(p => ({ ...p!, description: e.target.value }))}
                   style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
               </div>
@@ -566,7 +566,7 @@ export function CampaignsPage() {
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
                     Profissionais selecionados ({editing.selected_professionals?.length || 0})
                   </label>
-                  <input placeholder="Buscar profissional..." value={profSearch} onChange={e => setProfSearch(e.target.value)}
+                  <input placeholder={t('campaigns.search_placeholder')} value={profSearch} onChange={e => setProfSearch(e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }} />
                   <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, maxHeight: 180, overflowY: 'auto' }}>
                     {filteredProfs.map(p => {
@@ -599,7 +599,7 @@ export function CampaignsPage() {
                   <span style={{ fontSize: 10, color: '#94a3b8', fontWeight: 400, marginLeft: 6 }}>Use {'{nome}'}, {'{produto}'}, {'{link}'} etc.</span>
                 </label>
                 <textarea value={editing.message_template || ''} rows={5}
-                  placeholder="Olá {nome_cliente}! {nome_profissional} tem uma novidade para você..."
+                  placeholder={t('campaigns.modal_template_placeholder')}
                   onChange={e => setEditing(p => ({ ...p!, message_template: e.target.value }))}
                   style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }} />
               </div>

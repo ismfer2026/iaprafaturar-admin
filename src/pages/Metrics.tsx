@@ -227,7 +227,7 @@ export function MetricsPage() {
   }
 
   const triggerReactivation = async (score: HealthScore) => {
-    if (!window.confirm(`Enviar mensagem de reativação para ${score.professional?.name || 'este profissional'}?`)) {
+    if (!window.confirm(t('metrics.confirm_reactivation', { name: score.professional?.name || 'este profissional' }))) {
       return
     }
     setTriggering(score.id)
