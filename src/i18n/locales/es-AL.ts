@@ -567,13 +567,17 @@ export const esAL = {
     toast_config_load_error: "Error al cargar la configuración.",
   },
   improvements: {
-    title: "Mejoras",
-    subtitle: "Rastrear mejoras en desarrollo",
+    title: "Historial de Evolución",
+    subtitle: "Rastrear mejoras y nuevas características implementadas en el ecosistema iaprafaturar",
     loading: "Cargando mejoras...",
   },
   nexus: {
-    title: "Nexus Sphere",
-    subtitle: "Centro de control de la plataforma",
+    title: "Nexus Admin Sphere",
+    subtitle: "Gestión de Leads y Orquestración de IA SaaS",
     loading: "Cargando Nexus...",
+    refresh_button: "Actualizar",
+    placeholder_input: "Envía un comando a Nexus...",
+    error_sending: "Error al comunicarse con Nexus",
+    empty_state: "No se encontraron leads",
   },
 } satisfies TranslationTree;

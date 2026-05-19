@@ -567,13 +567,17 @@ export const enUS = {
     toast_config_load_error: "Error loading settings.",
   },
   improvements: {
-    title: "Improvements",
-    subtitle: "Track improvements in development",
+    title: "Evolution History",
+    subtitle: "Track improvements and new features implemented in the iaprafaturar ecosystem",
     loading: "Loading improvements...",
   },
   nexus: {
-    title: "Nexus Sphere",
-    subtitle: "Platform control center",
+    title: "Nexus Admin Sphere",
+    subtitle: "Lead Management and SaaS AI Orchestration",
     loading: "Loading Nexus...",
+    refresh_button: "Refresh",
+    placeholder_input: "Send a command to Nexus...",
+    error_sending: "Error communicating with Nexus",
+    empty_state: "No leads found",
   },
 } satisfies TranslationTree;

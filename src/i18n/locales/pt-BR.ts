@@ -567,13 +567,17 @@ export const ptBR = {
     toast_config_load_error: "Erro ao carregar configurações.",
   },
   improvements: {
-    title: "Melhorias",
-    subtitle: "Acompanhe as melhorias em desenvolvimento",
+    title: "Histórico de Evolução",
+    subtitle: "Acompanhe as melhorias e novas funcionalidades implementadas no ecossistema iaprafaturar",
     loading: "Carregando melhorias...",
   },
   nexus: {
-    title: "Nexus Sphere",
-    subtitle: "Controle central da plataforma",
+    title: "Nexus Admin Sphere",
+    subtitle: "Gestão de Leads e Orquestração de IA do SaaS",
     loading: "Carregando Nexus...",
+    refresh_button: "Atualizar",
+    placeholder_input: "Envie um comando para o Nexus...",
+    error_sending: "Erro ao falar com Nexus",
+    empty_state: "Nenhum lead encontrado",
   },
 } satisfies TranslationTree;
