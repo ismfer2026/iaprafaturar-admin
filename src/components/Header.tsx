@@ -30,6 +30,7 @@ export function Header() {
   const titleKey = pageTitleKeys[location.pathname]
   const title = titleKey ? t(titleKey) : 'Admin'
 
+  const { localeOptions, setLocale } = useI18n()
   const dateLocale = localeMap[locale] || 'pt-BR'
   const now = new Date().toLocaleDateString(dateLocale, {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -44,10 +45,30 @@ export function Header() {
       padding: '0 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
     }}>
       <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--foreground)', margin: 0 }}>{title}</h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <time dateTime={isoDate} style={{ fontSize: 13, color: 'var(--muted-foreground)', textTransform: 'capitalize' }}>
           {now}
         </time>
+        <select
+          value={locale}
+          onChange={(e) => setLocale(e.target.value as 'pt-BR' | 'en-US' | 'es-AL')}
+          aria-label="Selecionar idioma"
+          style={{
+            background: 'var(--secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            padding: '6px 10px',
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--foreground)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease-in-out',
+          }}
+        >
+          {localeOptions.map(opt => (
+            <option key={opt.locale} value={opt.locale}>{opt.label}</option>
+          ))}
+        </select>
         <button
           onClick={toggleTheme}
           aria-label={theme === 'light' ? t('shell.toggle_dark') : t('shell.toggle_light')}
