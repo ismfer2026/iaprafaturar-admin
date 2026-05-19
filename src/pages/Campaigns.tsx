@@ -249,14 +249,14 @@ export function CampaignsPage() {
             <Filter size={14} color="#64748b" />
             <select value={filterCategory} onChange={e => setFilterCategory(e.target.value as any)}
               style={{ padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff', color: '#0f172a' }}>
-              <option value="all">Todas as categorias</option>
+              <option value="all">{t('campaigns.filter_all_categories')}</option>
               {(Object.entries(CATEGORIES) as [CampaignCategory, any][]).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
               ))}
             </select>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as any)}
               style={{ padding: '7px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff', color: '#0f172a' }}>
-              <option value="all">Todos os status</option>
+              <option value="all">{t('campaigns.filter_all_status')}</option>
               {(Object.entries(STATUS_CONFIG) as [CampaignStatus, any][]).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
               ))}
@@ -503,20 +503,20 @@ export function CampaignsPage() {
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Público-alvo</label>
                   <select value={editing.target_audience || 'all_professionals'} onChange={e => setEditing(p => ({ ...p!, target_audience: e.target.value as TargetAudience }))}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff' }}>
-                    <option value="all_professionals">Todos os profissionais</option>
-                    <option value="selected_professionals">Profissionais selecionados</option>
-                    <option value="all_clients">Todos os clientes</option>
-                    <option value="inactive_clients">Clientes inativos</option>
-                    <option value="atlantica_clients">Clientes Atlântica Natural</option>
+                    <option value="all_professionals">{t('campaigns.audience_all_professionals')}</option>
+                    <option value="selected_professionals">{t('campaigns.audience_selected_professionals')}</option>
+                    <option value="all_clients">{t('campaigns.audience_all_clients')}</option>
+                    <option value="inactive_clients">{t('campaigns.audience_inactive_clients')}</option>
+                    <option value="atlantica_clients">{t('campaigns.audience_atlantica_clients')}</option>
                   </select>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>Agendamento</label>
                   <select value={editing.schedule_type || 'immediate'} onChange={e => setEditing(p => ({ ...p!, schedule_type: e.target.value as any }))}
                     style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', background: '#fff' }}>
-                    <option value="immediate">Imediato</option>
-                    <option value="scheduled">Data específica</option>
-                    <option value="triggered">Gatilho automático</option>
+                    <option value="immediate">{t('campaigns.schedule_immediate')}</option>
+                    <option value="scheduled">{t('campaigns.schedule_scheduled')}</option>
+                    <option value="triggered">{t('campaigns.schedule_triggered')}</option>
                   </select>
                 </div>
                 <div>
