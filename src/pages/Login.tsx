@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { useI18n } from '../i18n'
+import { Globe } from 'lucide-react'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -10,7 +11,7 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const { t } = useI18n()
+  const { t, locale, setLocale, localeOptions } = useI18n()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -66,7 +67,28 @@ export function Login() {
       <div style={{
         width: 480, background: '#fff',
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48,
+        position: 'relative',
       }}>
+        {/* Language selector */}
+        <div style={{ position: 'absolute', top: 24, right: 24, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Globe size={18} style={{ color: '#94a3b8' }} />
+          <select
+            value={locale}
+            onChange={e => setLocale(e.target.value as any)}
+            style={{
+              padding: '6px 10px', fontSize: 13, border: '1px solid #e2e8f0',
+              borderRadius: 6, background: '#fff', cursor: 'pointer',
+              color: '#64748b', outline: 'none',
+            }}
+          >
+            {localeOptions.map(opt => (
+              <option key={opt.locale} value={opt.locale}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div style={{ width: '100%', maxWidth: 360 }}>
           <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1A1A2E', margin: '0 0 6px' }}>{t('login.title')}</h2>
           <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 36px' }}>
