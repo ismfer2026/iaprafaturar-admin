@@ -606,7 +606,7 @@ export function PlansPage() {
                       <div style={{ borderTop: `1px solid ${clr.border}`, background: clr.bg, padding: '16px 24px' }}>
                         <p style={{ fontSize: 12, fontWeight: 700, color: clr.color, textTransform: 'uppercase', margin: '0 0 12px' }}>Assinantes — {plan.name}</p>
                         {loadingSubs ? (
-                          <p style={{ fontSize: 13, color: '#94a3b8' }}>Carregando...</p>
+                          <p style={{ fontSize: 13, color: '#94a3b8' }}>{t('plans.loading_ellipsis')}</p>
                         ) : subscribers.length === 0 ? (
                           <p style={{ fontSize: 13, color: '#94a3b8' }}>Nenhum assinante ativo neste plano no momento.</p>
                         ) : (

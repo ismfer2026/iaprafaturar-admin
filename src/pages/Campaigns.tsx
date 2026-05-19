@@ -270,12 +270,12 @@ export function CampaignsPage() {
 
           {/* Lista de campanhas */}
           {loading ? (
-            <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>Carregando campanhas...</div>
+            <div style={{ padding: 48, textAlign: 'center', color: '#94a3b8' }}>{t('campaigns.loading_message')}</div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: 64, textAlign: 'center', background: '#f8fafc', borderRadius: 14, border: '2px dashed #e2e8f0' }}>
               <Zap size={36} color="#cbd5e1" style={{ marginBottom: 12 }} />
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>Nenhuma campanha ainda</p>
-              <p style={{ fontSize: 13, color: '#cbd5e1', margin: '0 0 20px' }}>Crie sua primeira campanha ou use um template da biblioteca</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#94a3b8', margin: '0 0 6px' }}>{t('campaigns.empty_title')}</p>
+              <p style={{ fontSize: 13, color: '#cbd5e1', margin: '0 0 20px' }}>{t('campaigns.empty_message')}</p>
               <button onClick={() => setActiveTab('templates')}
                 style={{ padding: '9px 20px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                 Ver Templates
