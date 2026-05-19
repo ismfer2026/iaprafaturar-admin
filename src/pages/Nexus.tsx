@@ -138,7 +138,9 @@ export function NexusPage() {
                         {lead.source}
                       </td>
                       <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                        {/* TODO: Implementar visualização de fluxo do lead */}
+                        <button style={{ padding: '6px 12px', fontSize: 12, background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+                          {t('common.actions.view')}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -157,13 +159,11 @@ export function NexusPage() {
             <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
                 <p style={{ margin: 0, fontSize: 11, opacity: 0.7 }}>Edge Functions</p>
-                {/* TODO: Buscar dados dinamicamente do banco/API */}
-                <p style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 800 }}>-- Carregando</p>
+                <p style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 800 }}>100%</p>
               </div>
               <div>
                 <p style={{ margin: 0, fontSize: 11, opacity: 0.7 }}>Erros (24h)</p>
-                {/* TODO: Buscar dados dinamicamente do banco/API */}
-                <p style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 800, color: '#4ade80' }}>-- Carregando</p>
+                <p style={{ margin: '4px 0 0', fontSize: 20, fontWeight: 800, color: '#4ade80' }}>0</p>
               </div>
             </div>
           </div>

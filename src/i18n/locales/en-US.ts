@@ -12,6 +12,7 @@ export const enUS = {
       send: "Send",
       loading: "Loading...",
       back: "Back",
+      view: "View",
     },
     states: {
       loading: "Loading...",

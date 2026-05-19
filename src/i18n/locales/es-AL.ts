@@ -12,6 +12,7 @@ export const esAL = {
       send: "Enviar",
       loading: "Cargando...",
       back: "Atrás",
+      view: "Ver",
     },
     states: {
       loading: "Cargando...",

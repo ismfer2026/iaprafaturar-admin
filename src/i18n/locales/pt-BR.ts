@@ -12,6 +12,7 @@ export const ptBR = {
       send: "Enviar",
       loading: "Carregando...",
       back: "Voltar",
+      view: "Visualizar",
     },
     states: {
       loading: "Carregando...",
