@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, Server, Smartphone, Key, Eye, EyeOff, Lock } from 'lucide-react';
+import { Save, Server, Smartphone, Key, Eye, EyeOff, Lock, AlertCircle } from 'lucide-react';
+import * as Sentry from '@sentry/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -298,6 +299,29 @@ export default function SettingsPage() {
               {t('settings.password_security_note')}
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-amber-50 max-w-3xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-orange-700">
+            <AlertCircle className="w-5 h-5" />
+            Testar Sentry (Dev/Testing)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-slate-700 mb-4">
+            Clique no botão abaixo para disparar um erro de teste e verificar se o Sentry está capturando corretamente.
+          </p>
+          <Button
+            onClick={() => {
+              Sentry.captureException(new Error('Teste Sentry - erro proposital para validação'));
+              toast.success('Erro enviado para Sentry');
+            }}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
+          >
+            🧪 Disparar Erro de Teste
+          </Button>
         </CardContent>
       </Card>
     </div>
