@@ -66,6 +66,12 @@ export const esAL = {
     submitting: "Iniciando sesión...",
     restricted: "Acceso restringido solo a administradores invitados.",
     error: "Error al iniciar sesión",
+    features: {
+      metrics: "Métricas financieras en tiempo real",
+      professionals: "Gestión de profesionales y planes",
+      agents: "Control de agentes de IA",
+      ambassadors: "Programa de embajadores",
+    },
   },
   dashboard: {
     title: "Panel de Control",

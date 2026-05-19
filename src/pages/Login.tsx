@@ -49,14 +49,14 @@ export function Login() {
 
           <div style={{ marginTop: 64, display: 'flex', flexDirection: 'column', gap: 20 }}>
             {[
-              { icon: '📊', text: 'Métricas financeiras em tempo real' },
-              { icon: '👥', text: 'Gestão de profissionais e planos' },
-              { icon: '🤖', text: 'Controle de agentes de IA' },
-              { icon: '🏆', text: 'Programa de embaixadores' },
-            ].map(({ icon, text }) => (
-              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
+              { icon: '📊', key: 'login.features.metrics' },
+              { icon: '👥', key: 'login.features.professionals' },
+              { icon: '🤖', key: 'login.features.agents' },
+              { icon: '🏆', key: 'login.features.ambassadors' },
+            ].map(({ icon, key }) => (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left' }}>
                 <span style={{ fontSize: 22 }}>{icon}</span>
-                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>{text}</span>
+                <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>{t(key as any)}</span>
               </div>
             ))}
           </div>

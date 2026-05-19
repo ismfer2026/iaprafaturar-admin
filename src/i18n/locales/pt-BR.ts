@@ -66,6 +66,12 @@ export const ptBR = {
     submitting: "Entrando...",
     restricted: "Acesso restrito apenas para administradores convidados.",
     error: "Erro ao fazer login",
+    features: {
+      metrics: "Métricas financeiras em tempo real",
+      professionals: "Gestão de profissionais e planos",
+      agents: "Controle de agentes de IA",
+      ambassadors: "Programa de embaixadores",
+    },
   },
   dashboard: {
     title: "Dashboard",

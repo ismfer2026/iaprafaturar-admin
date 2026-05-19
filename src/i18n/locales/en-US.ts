@@ -66,6 +66,12 @@ export const enUS = {
     submitting: "Signing in...",
     restricted: "Access restricted to invited administrators only.",
     error: "Login error",
+    features: {
+      metrics: "Real-time financial metrics",
+      professionals: "Professional and plan management",
+      agents: "AI agents control",
+      ambassadors: "Ambassadors program",
+    },
   },
   dashboard: {
     title: "Dashboard",
