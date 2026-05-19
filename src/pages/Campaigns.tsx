@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useI18n } from '@/i18n'
 import {
   Plus, X, Play, Pause, Send, ChevronDown, ChevronUp,
   Zap, ShoppingBag, RefreshCw, BookOpen, TrendingUp, Target,
@@ -123,6 +124,7 @@ function StatPill({ label, value, color }: { label: string; value: number; color
 // PÁGINA PRINCIPAL
 // ══════════════════════════════════════════════════════════
 export function CampaignsPage() {
+  const { t } = useI18n()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [loading, setLoading] = useState(true)
@@ -201,6 +203,11 @@ export function CampaignsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+      <div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>{t('campaigns.title')}</h1>
+        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>{t('campaigns.subtitle')}</p>
+      </div>
 
       {/* Abas */}
       <div style={{ display: 'flex', gap: 4, background: '#f1f5f9', borderRadius: 10, padding: 4, width: 'fit-content' }}>
