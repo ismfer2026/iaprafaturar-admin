@@ -422,6 +422,8 @@ export const ptBR = {
     toast_clear_success: "notificações antigas removidas",
     toast_clear_none: "Nenhuma notificação com mais de {days} dias",
     toast_clear_error: "Erro ao limpar notificações antigas",
+    toast_sent: "Broadcast enviado: {pushCount} via push + {dbOnly} no banco",
+    toast_saved: "Broadcast inserido no banco para {count} profissional{count, plural, one {} other {s}}",
   },
   metrics: {
     title: "Métricas",

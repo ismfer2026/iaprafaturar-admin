@@ -422,6 +422,8 @@ export const esAL = {
     toast_clear_success: "notificaciones antiguas eliminadas",
     toast_clear_none: "Sin notificaciones anteriores a {days} días",
     toast_clear_error: "Error al limpiar notificaciones antiguas",
+    toast_sent: "Transmisión enviada: {pushCount} vía push + {dbOnly} en base de datos",
+    toast_saved: "Transmisión guardada en base de datos para {count} profesional{count, plural, one {} other {es}}",
   },
   metrics: {
     title: "Métricas",

@@ -422,6 +422,8 @@ export const enUS = {
     toast_clear_success: "old notifications removed",
     toast_clear_none: "No notifications older than {days} days",
     toast_clear_error: "Error clearing old notifications",
+    toast_sent: "Broadcast sent: {pushCount} via push + {dbOnly} in database",
+    toast_saved: "Broadcast saved in database for {count} professional{count, plural, one {} other {s}}",
   },
   metrics: {
     title: "Metrics",

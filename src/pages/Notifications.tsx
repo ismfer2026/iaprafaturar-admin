@@ -194,8 +194,8 @@ export function NotificationsPage() {
       const dbOnly = targetIds.length - (result?.no_token_count || 0)
 
       const message = pushCount > 0
-        ? `Broadcast enviado: ${pushCount} via push + ${dbOnly} no banco`
-        : `Broadcast inserido no banco para ${targetIds.length} profissional${targetIds.length !== 1 ? 's' : ''}`
+        ? t('notifications.toast_sent', { pushCount, dbOnly })
+        : t('notifications.toast_saved', { count: targetIds.length })
 
       toast.success(message)
       setShowModal(false)
