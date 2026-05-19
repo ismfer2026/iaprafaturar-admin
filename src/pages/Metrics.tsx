@@ -490,7 +490,7 @@ export function MetricsPage() {
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
               <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input value={healthSearch} onChange={e => setHealthSearch(e.target.value)} placeholder="Buscar profissional..."
+              <input value={healthSearch} onChange={e => setHealthSearch(e.target.value)} placeholder={t('metrics.health_search_placeholder')}
                 style={{ width: '100%', paddingLeft: 36, paddingRight: 12, paddingTop: 9, paddingBottom: 9, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', background: '#fff', boxSizing: 'border-box' }} />
             </div>
             <select value={healthFilterStatus} onChange={e => setHealthFilterStatus(e.target.value)}

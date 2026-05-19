@@ -59,7 +59,7 @@ export function NexusPage() {
       if (error) throw error
       setMessages(prev => [...prev, { role: 'assistant', text: data.reply || 'Erro na resposta.' }])
     } catch (e) {
-      toast.error('Erro ao falar com Nexus')
+      toast.error(t('nexus.error_sending'))
       console.error(e)
     } finally {
       setSending(false)
@@ -213,7 +213,7 @@ export function NexusPage() {
                   value={chatInput}
                   onChange={e => setChatInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Comando Nexus..."
+                  placeholder={t('nexus.placeholder_input')}
                   style={{ flex: 1, padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none' }}
                 />
                 <button
