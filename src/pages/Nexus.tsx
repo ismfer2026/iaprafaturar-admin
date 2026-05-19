@@ -179,7 +179,7 @@ export function NexusPage() {
 
             <div
               aria-live="polite"
-              aria-label="Conversa com Nexus"
+              aria-label={t('nexus.conversation_label')}
               style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}
             >
               {messages.map((m, i) => (
@@ -219,7 +219,7 @@ export function NexusPage() {
                 <button
                   onClick={handleSendMessage}
                   disabled={sending}
-                  aria-label="Enviar mensagem"
+                  aria-label={t('shell.send_message')}
                   style={{ background: '#0D6E6E', border: 'none', borderRadius: 8, width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}
                 >
                   <Send size={18} aria-hidden={true} />

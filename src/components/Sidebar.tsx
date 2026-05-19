@@ -33,7 +33,7 @@ export function Sidebar() {
 
   return (
     <aside
-      aria-label="Navegação do painel"
+      aria-label={t('shell.navigation_panel')}
       style={{
         position: 'fixed', left: 0, top: 0, bottom: 0,
         width: 256, background: '#0D6E6E', color: '#fff',

@@ -52,34 +52,34 @@ const STATUS_CONFIG: Record<CampaignStatus, { label: string; color: string; bg: 
   finished: { label: 'Concluída', color: '#7c3aed', bg: '#f5f3ff', icon: CheckCircle },
 }
 
-const CAMPAIGN_TEMPLATES: Record<CampaignCategory, { name: string; message: string; audience: TargetAudience; trigger?: string }[]> = {
+const getTemplates = (t: (key: string) => string): Record<CampaignCategory, { name: string; message: string; audience: TargetAudience; trigger?: string }[]> => ({
   growth: [
-    { name: 'Convite para Trial', message: 'Olá {nome}! 👋 Você já ouviu falar do iaprafaturar? A plataforma com IA que está ajudando profissionais de saúde a faturar mais com menos esforço. Teste grátis por 30 dias: {link}', audience: 'all_professionals' },
-    { name: 'Programa Embaixadores', message: '{nome}, seus colegas estão indicando o iaprafaturar e ganhando mensalidade zero! Cada indicação ativa = 15% de desconto permanente. Quer participar? {link}', audience: 'all_professionals' },
-    { name: 'Reativação de Trial Expirado', message: 'Oi {nome}! Seu trial expirou, mas sua conta ainda está aqui te esperando. 🌿 Assine hoje com 20% OFF no primeiro mês: {cupom}', audience: 'all_professionals' },
+    { name: t('campaign_templates.growth_trial'), message: t('campaign_templates.growth_trial_msg'), audience: 'all_professionals' },
+    { name: t('campaign_templates.growth_ambassadors'), message: t('campaign_templates.growth_ambassadors_msg'), audience: 'all_professionals' },
+    { name: t('campaign_templates.growth_reactivation'), message: t('campaign_templates.growth_reactivation_msg'), audience: 'all_professionals' },
   ],
   atlantica: [
-    { name: 'Lançamento de Produto', message: 'Olá {nome_cliente}! {nome_profissional} tem uma novidade especial para você: o {produto} da Atlântica Natural chegou! Produto natural, resultados reais. Saiba mais: {link}', audience: 'atlantica_clients' },
-    { name: 'Sequência Educativa AN', message: 'Oi {nome_cliente}! Você sabia que {fato_produto}? {nome_profissional} recomenda o {produto} para {beneficio}. Quer saber mais? Responda SIM 👇', audience: 'atlantica_clients', trigger: 'after_consultation' },
-    { name: 'Liquidação de Estoque', message: '🌿 {nome_cliente}, o estoque de {produto} está acabando! {nome_profissional} separou algumas unidades para você com condição especial. Responda QUERO para garantir a sua.', audience: 'atlantica_clients' },
-    { name: 'Recompra Automática', message: 'Oi {nome_cliente}! Já faz {dias} dias desde que você comprou {produto}. Está na hora de reabastecer! {nome_profissional} está com estoque disponível. Deseja encomendar? 🌱', audience: 'atlantica_clients', trigger: 'days_since_purchase' },
+    { name: t('campaign_templates.atlantica_launch'), message: t('campaign_templates.atlantica_launch_msg'), audience: 'atlantica_clients' },
+    { name: t('campaign_templates.atlantica_education'), message: t('campaign_templates.atlantica_education_msg'), audience: 'atlantica_clients', trigger: 'after_consultation' },
+    { name: t('campaign_templates.atlantica_clearance'), message: t('campaign_templates.atlantica_clearance_msg'), audience: 'atlantica_clients' },
+    { name: t('campaign_templates.atlantica_reorder'), message: t('campaign_templates.atlantica_reorder_msg'), audience: 'atlantica_clients', trigger: 'days_since_purchase' },
   ],
   reactivation: [
-    { name: 'Sumiu? Sentimos falta!', message: 'Oi {nome_cliente}! Faz um tempinho que não nos vemos por aqui. 💚 {nome_profissional} está com novidades e quer cuidar de você. Vamos agendar uma conversa?', audience: 'inactive_clients', trigger: 'inactive_30_days' },
-    { name: 'Oferta de Retorno', message: '{nome_cliente}, você está com {desconto}% de desconto esperando por você! {nome_profissional} reservou uma condição especial para clientes que voltam. Válido até {data_expiracao}.', audience: 'inactive_clients' },
-    { name: 'Pesquisa de Satisfação', message: 'Oi {nome_cliente}! Nos importamos com sua opinião. Por que você deixou de agendar com {nome_profissional}? Sua resposta nos ajuda a melhorar. Responda com 1, 2 ou 3: 1️⃣ Preço  2️⃣ Distância  3️⃣ Outro motivo', audience: 'inactive_clients' },
+    { name: t('campaign_templates.reactivation_missing'), message: t('campaign_templates.reactivation_missing_msg'), audience: 'inactive_clients', trigger: 'inactive_30_days' },
+    { name: t('campaign_templates.reactivation_offer'), message: t('campaign_templates.reactivation_offer_msg'), audience: 'inactive_clients' },
+    { name: t('campaign_templates.reactivation_survey'), message: t('campaign_templates.reactivation_survey_msg'), audience: 'inactive_clients' },
   ],
   education: [
-    { name: 'Dica Semanal de Saúde', message: '💡 Dica da semana de {nome_profissional}: {dica_saude}. Cuide-se! Para dúvidas ou agendamentos, é só chamar. 🌿', audience: 'all_clients', trigger: 'weekly' },
-    { name: 'Conteúdo sobre Produto AN', message: 'Você sabia que {ingrediente_an} tem {beneficio}? {nome_profissional} usa {produto} nos seus protocolos por causa disso. Quer aprender mais? {link_conteudo}', audience: 'atlantica_clients' },
-    { name: 'Lembrete de Cuidados Pós-Consulta', message: 'Olá {nome_cliente}! Lembrando das orientações de {nome_profissional}: {orientacao}. Alguma dúvida? Pode chamar aqui! 💚', audience: 'all_clients', trigger: 'post_consultation' },
+    { name: t('campaign_templates.education_weekly'), message: t('campaign_templates.education_weekly_msg'), audience: 'all_clients', trigger: 'weekly' },
+    { name: t('campaign_templates.education_product'), message: t('campaign_templates.education_product_msg'), audience: 'atlantica_clients' },
+    { name: t('campaign_templates.education_postcare'), message: t('campaign_templates.education_postcare_msg'), audience: 'all_clients', trigger: 'post_consultation' },
   ],
   upsell: [
-    { name: 'Oferta de Upgrade de Plano', message: 'Oi {nome}! Você está no plano Solo há {meses} meses e já atingiu {percentual}% do limite de clientes. Considere o Pro — mais recursos, mais crescimento! Upgrade com 10% OFF: {link}', audience: 'all_professionals', trigger: 'limit_threshold' },
-    { name: 'Pacote de Créditos IA', message: '{nome}, seus créditos de IA estão acabando! 🤖 Seus agentes estão gerando resultados — não deixe a automação parar. Recarregue agora: {link}', audience: 'all_professionals', trigger: 'credits_low' },
-    { name: 'Serviço Complementar', message: 'Oi {nome_cliente}! {nome_profissional} tem um serviço que complementa perfeitamente o que você já faz: {servico}. Quer saber mais detalhes?', audience: 'all_clients', trigger: 'after_purchase' },
+    { name: t('campaign_templates.upsell_upgrade'), message: t('campaign_templates.upsell_upgrade_msg'), audience: 'all_professionals', trigger: 'limit_threshold' },
+    { name: t('campaign_templates.upsell_credits'), message: t('campaign_templates.upsell_credits_msg'), audience: 'all_professionals', trigger: 'credits_low' },
+    { name: t('campaign_templates.upsell_service'), message: t('campaign_templates.upsell_service_msg'), audience: 'all_clients', trigger: 'after_purchase' },
   ],
-}
+})
 
 const EMPTY_CAMPAIGN: Partial<Campaign> = {
   name: '', description: '', category: 'atlantica', status: 'draft',
@@ -125,6 +125,7 @@ function StatPill({ label, value, color }: { label: string; value: number; color
 // ══════════════════════════════════════════════════════════
 export function CampaignsPage() {
   const { t } = useI18n()
+  const CAMPAIGN_TEMPLATES = getTemplates(t)
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [loading, setLoading] = useState(true)

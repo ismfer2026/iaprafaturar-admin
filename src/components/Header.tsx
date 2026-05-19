@@ -52,7 +52,7 @@ export function Header() {
         <select
           value={locale}
           onChange={(e) => setLocale(e.target.value as 'pt-BR' | 'en-US' | 'es-AL')}
-          aria-label="Selecionar idioma"
+          aria-label={t('shell.select_language')}
           style={{
             background: 'var(--secondary)',
             border: '1px solid var(--border)',
