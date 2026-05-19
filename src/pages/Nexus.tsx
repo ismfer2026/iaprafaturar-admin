@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { Shield, Users, Bot, Send, RefreshCw, Phone } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useI18n } from '@/i18n'
 
 interface Lead {
   id: string
@@ -13,6 +14,7 @@ interface Lead {
 }
 
 export function NexusPage() {
+  const { t } = useI18n()
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [chatInput, setChatInput] = useState('')
@@ -71,9 +73,9 @@ export function NexusPage() {
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 900, color: '#1A1A2E', margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
             <Shield size={28} color="#0D6E6E" aria-hidden={true} />
-            Nexus Admin Sphere
+            {t('nexus.title')}
           </h1>
-          <p style={{ fontSize: 14, color: '#64748b', margin: '4px 0 0' }}>Gestão de Leads e Orquestração de IA do SaaS.</p>
+          <p style={{ fontSize: 14, color: '#64748b', margin: '4px 0 0' }}>{t('nexus.subtitle')}</p>
         </div>
         <button 
           onClick={fetchLeads} 

@@ -1,4 +1,5 @@
 import { Rocket, CheckCircle2, Zap, Shield, Lock } from 'lucide-react'
+import { useI18n } from '@/i18n'
 
 const improvements = [
   {
@@ -44,14 +45,16 @@ const improvements = [
 ]
 
 export default function Improvements() {
+  const { t } = useI18n()
+
   return (
     <div style={{ padding: '32px', maxWidth: '1000px', margin: '0 auto' }}>
       <div style={{ marginBottom: '48px', textAlign: 'center' }}>
         <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#1a202c', marginBottom: '8px' }}>
-          Histórico de Evolução <span style={{ color: '#0D6E6E' }}>Nexus</span>
+          {t('improvements.title')}
         </h1>
         <p style={{ color: '#718096', fontSize: '18px' }}>
-          Acompanhe as melhorias e novas funcionalidades implementadas no ecossistema iaprafaturar.
+          {t('improvements.subtitle')}
         </p>
       </div>
 
