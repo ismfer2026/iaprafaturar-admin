@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useI18n } from '@/i18n'
 import { TrendingUp, Users, CreditCard, DollarSign, Activity, Bot, Building, UserPlus, Copy, Link as LinkIcon, ExternalLink } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { toast } from 'react-hot-toast' // Garantindo o import do toast para feedback
@@ -39,6 +40,7 @@ function KpiCard({ kpi }: { kpi: KPI }) {
 }
 
 export function Dashboard() {
+  const { t } = useI18n()
   const [kpiFinancial, setKpiFinancial] = useState<KPI[]>([])
   const [kpiUsers, setKpiUsers] = useState<KPI[]>([])
   const [planData, setPlanData] = useState<Plan[]>([])
@@ -162,6 +164,11 @@ export function Dashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36, paddingBottom: 40 }}>
+
+      <div>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: '0 0 4px' }}>{t('dashboard.title')}</h1>
+        <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>{t('dashboard.subtitle')}</p>
+      </div>
 
       {/* ===================================================================== */}
       {/* 🚀 BANNER DO LINK DE VENDAS DIRETO DO ADMIN (ATUALIZADO PARA HEYFORM) */}
