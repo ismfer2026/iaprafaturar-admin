@@ -20,7 +20,9 @@ export function Login() {
       await signIn(email, password)
       navigate('/dashboard')
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Credenciais inválidas')
+      const msg = err instanceof Error ? err.message : 'Credenciais inválidas'
+      const translated = msg === 'Credenciais inválidas ou acesso não autorizado' ? t('errors.invalid_credentials') : msg
+      setError(translated)
     } finally {
       setLoading(false)
     }
