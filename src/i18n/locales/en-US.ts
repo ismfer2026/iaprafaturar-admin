@@ -608,7 +608,7 @@ export const enUS = {
   },
   campaign_templates: {
     growth_trial: "Trial Invitation",
-    growth_trial_msg: "Hi {nome}! 👋 Have you heard of iaprafaturar? The AI platform helping healthcare professionals earn more with less effort. Free 30-day trial: {link}",
+    growth_trial_msg: "Hi {nome}! 👋 Have you heard of iaprafaturar? The AI platform helping healthcare professionals earn more with less effort. Free 14-day trial: {link}",
     growth_ambassadors: "Ambassador Program",
     growth_ambassadors_msg: "{nome}, your colleagues are referring iaprafaturar and getting free subscriptions! Each active referral = 15% permanent discount. Want to join? {link}",
     growth_reactivation: "Expired Trial Reactivation",

@@ -608,7 +608,7 @@ export const esAL = {
   },
   campaign_templates: {
     growth_trial: "Invitación de Prueba",
-    growth_trial_msg: "¡Hola {nome}! 👋 ¿Ya has oído hablar de iaprafaturar? La plataforma con IA que está ayudando a profesionales de la salud a ganar más con menos esfuerzo. Prueba gratis por 30 días: {link}",
+    growth_trial_msg: "¡Hola {nome}! 👋 ¿Ya has oído hablar de iaprafaturar? La plataforma con IA que está ayudando a profesionales de la salud a ganar más con menos esfuerzo. Prueba gratis por 14 días: {link}",
     growth_ambassadors: "Programa de Embajadores",
     growth_ambassadors_msg: "{nome}, ¡tus colegas están recomendando iaprafaturar y ganando suscripción gratis! Cada referencia activa = 15% de descuento permanente. ¿Quieres participar? {link}",
     growth_reactivation: "Reactivación de Prueba Vencida",

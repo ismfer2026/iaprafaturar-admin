@@ -608,7 +608,7 @@ export const ptBR = {
   },
   campaign_templates: {
     growth_trial: "Convite para Trial",
-    growth_trial_msg: "Olá {nome}! 👋 Você já ouviu falar do iaprafaturar? A plataforma com IA que está ajudando profissionais de saúde a faturar mais com menos esforço. Teste grátis por 30 dias: {link}",
+    growth_trial_msg: "Olá {nome}! 👋 Você já ouviu falar do iaprafaturar? A plataforma com IA que está ajudando profissionais de saúde a faturar mais com menos esforço. Teste grátis por 14 dias: {link}",
     growth_ambassadors: "Programa Embaixadores",
     growth_ambassadors_msg: "{nome}, seus colegas estão indicando o iaprafaturar e ganhando mensalidade zero! Cada indicação ativa = 15% de desconto permanente. Quer participar? {link}",
     growth_reactivation: "Reativação de Trial Expirado",
