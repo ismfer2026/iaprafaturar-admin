@@ -13,11 +13,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (initialized.current) return
     initialized.current = true
 
+    // Timeout de segurança: força loading=false após 8s caso getCurrentAdmin trave
+    const safetyTimer = setTimeout(() => setLoading(false), 8000)
+
     // Verifica sessão inicial
     getCurrentAdmin().then((currentAdmin) => {
       setAdmin(currentAdmin)
-      setLoading(false)
     }).catch(() => {
+      // erro silenciado — admin permanece null
+    }).finally(() => {
+      clearTimeout(safetyTimer)
       setLoading(false)
     })
 
