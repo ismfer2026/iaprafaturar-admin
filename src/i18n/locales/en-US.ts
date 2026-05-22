@@ -53,6 +53,7 @@ export const enUS = {
     theme_provider: "useTheme must be used within a ThemeProvider",
     auth_provider: "useAuth must be used within an AuthProvider",
     invalid_credentials: "Invalid credentials or unauthorized access",
+    timeout: "The server took too long to respond. Please try again.",
   },
   login: {
     title: "Welcome Back",

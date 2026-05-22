@@ -53,6 +53,7 @@ export const esAL = {
     theme_provider: "useTheme debe usarse dentro de ThemeProvider",
     auth_provider: "useAuth debe usarse dentro de AuthProvider",
     invalid_credentials: "Credenciales inválidas o acceso no autorizado",
+    timeout: "El servidor tardó demasiado. Por favor, inténtalo de nuevo.",
   },
   login: {
     title: "Bienvenido de Vuelta",

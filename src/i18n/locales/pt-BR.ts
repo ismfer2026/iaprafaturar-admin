@@ -53,6 +53,7 @@ export const ptBR = {
     theme_provider: "useTheme deve ser usado dentro de ThemeProvider",
     auth_provider: "useAuth must be used within an AuthProvider",
     invalid_credentials: "Credenciais inválidas ou acesso não autorizado",
+    timeout: "O servidor demorou para responder. Tente novamente.",
   },
   login: {
     title: "Bem-vindo de volta",
