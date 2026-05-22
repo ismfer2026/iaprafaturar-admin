@@ -24,26 +24,32 @@ const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
 }
 
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-  const maxRetries = 2
+  const maxRetries = 1
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 8000) // 8s por request
+
     try {
       const response = await fetch(url, {
         ...options,
         headers: normalizeHeaders(options?.headers),
+        signal: controller.signal,
       })
+      clearTimeout(timeout)
 
       if (!response.ok && response.status >= 500 && attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        await new Promise(resolve => setTimeout(resolve, 800))
         continue
       }
 
       return response
     } catch (error: any) {
+      clearTimeout(timeout)
       lastError = error
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)))
+        await new Promise(resolve => setTimeout(resolve, 800))
         continue
       }
     }

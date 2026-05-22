@@ -17,12 +17,20 @@ export function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
+
+    const TIMEOUT_MS = 12000
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(t('errors.timeout'))), TIMEOUT_MS)
+    )
+
     try {
-      await signIn(email, password)
+      await Promise.race([signIn(email, password), timeoutPromise])
       navigate('/dashboard')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Credenciais inválidas'
-      const translated = msg === 'Credenciais inválidas ou acesso não autorizado' ? t('errors.invalid_credentials') : msg
+      const translated = msg === 'Credenciais inválidas ou acesso não autorizado'
+        ? t('errors.invalid_credentials')
+        : msg
       setError(translated)
     } finally {
       setLoading(false)
