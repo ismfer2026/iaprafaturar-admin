@@ -3,12 +3,13 @@ import { supabase } from '../lib/supabase'
 import {
   Plus, X, Send, ChevronDown, ChevronUp, Filter,
   Bell, Info, AlertTriangle, AlertCircle, CheckCircle, Sparkles,
-  Users, Clock
+  Users, Clock, Smartphone, MessageCircle, GitMerge
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useI18n } from '../i18n'
 
 type NotifType = 'info' | 'alert' | 'warning' | 'success' | 'update'
+type Channel = 'push_only' | 'push_with_whatsapp_fallback' | 'whatsapp_only'
 
 interface ProfWithPrefs {
   id: string
@@ -55,7 +56,14 @@ export function NotificationsPage() {
     body: '',
     type: 'info' as NotifType,
     priority: 5,
+    channel: 'push_only' as Channel,
   })
+
+  const CHANNEL_OPTIONS: { value: Channel; labelKey: string; descKey: string; icon: any; color: string }[] = [
+    { value: 'push_only',                  labelKey: 'notifications.channel_push_only',    descKey: 'notifications.channel_push_only_desc',    icon: Smartphone,     color: '#0284c7' },
+    { value: 'push_with_whatsapp_fallback', labelKey: 'notifications.channel_push_whatsapp', descKey: 'notifications.channel_push_whatsapp_desc', icon: GitMerge,       color: '#0D6E6E' },
+    { value: 'whatsapp_only',              labelKey: 'notifications.channel_whatsapp_only', descKey: 'notifications.channel_whatsapp_only_desc', icon: MessageCircle,  color: '#16a34a' },
+  ]
 
   const getTypeConfig = () => ({
     info:    { ...TYPE_CONFIG_DEFAULTS.info, label: t('notifications.broadcast_type_info') },
@@ -184,6 +192,7 @@ export function NotificationsPage() {
           body: form.body,
           type: form.type,
           priority: form.priority,
+          channel: form.channel,
         },
       })
 
@@ -191,15 +200,18 @@ export function NotificationsPage() {
 
       const result = data as any
       const pushCount = result?.pushed || 0
-      const dbOnly = targetIds.length - (result?.no_token_count || 0)
+      const waCount = result?.whatsapp_sent || 0
 
-      const message = pushCount > 0
-        ? t('notifications.toast_sent', { pushCount, dbOnly })
-        : t('notifications.toast_saved', { count: targetIds.length })
+      const parts: string[] = []
+      if (pushCount > 0) parts.push(`${pushCount} push`)
+      if (waCount > 0) parts.push(`${waCount} WhatsApp`)
+      const message = parts.length > 0
+        ? t('notifications.toast_sent_channels', { parts: parts.join(' + '), total: targetIds.length })
+        : t('notifications.toast_saved_db', { count: targetIds.length })
 
       toast.success(message)
       setShowModal(false)
-      setForm({ title: '', body: '', type: 'info', priority: 5 })
+      setForm({ title: '', body: '', type: 'info', priority: 5, channel: 'push_only' })
       setSelectedProfs([])
       setAudienceType('all')
       await fetchAll()
@@ -425,6 +437,43 @@ export function NotificationsPage() {
                 <textarea value={form.body} rows={5} placeholder={t('notifications.broadcast_placeholder')}
                   onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
                   style={{ width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 13, outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.6 }} />
+              </div>
+
+              {/* Canal de envio */}
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
+                  {t('notifications.broadcast_channel')}
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {CHANNEL_OPTIONS.map(opt => {
+                    const selected = form.channel === opt.value
+                    const Icon = opt.icon
+                    return (
+                      <div key={opt.value} onClick={() => setForm(p => ({ ...p, channel: opt.value }))}
+                        style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px',
+                          borderRadius: 10, border: `2px solid ${selected ? opt.color : '#e2e8f0'}`,
+                          background: selected ? `${opt.color}08` : '#fafafa',
+                          cursor: 'pointer', transition: 'all 0.15s',
+                        }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: selected ? opt.color : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                          <Icon size={16} color={selected ? '#fff' : '#94a3b8'} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: selected ? opt.color : '#374151', margin: '0 0 2px' }}>
+                            {t(opt.labelKey)}
+                          </p>
+                          <p style={{ fontSize: 11, color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+                            {t(opt.descKey)}
+                          </p>
+                        </div>
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${selected ? opt.color : '#cbd5e1'}`, background: selected ? opt.color : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 6 }}>
+                          {selected && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', display: 'block' }} />}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Público-alvo */}
