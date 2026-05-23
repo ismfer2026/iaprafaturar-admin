@@ -28,16 +28,13 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
   let lastError: Error | null = null
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 8000) // 8s por request
-
     try {
       const response = await fetch(url, {
         ...options,
         headers: normalizeHeaders(options?.headers),
-        signal: controller.signal,
+        // Não substituir o signal original — o timeout é tratado no nível do componente
+        // via Promise.race. Adicionar AbortController aqui causava "signal aborted without reason".
       })
-      clearTimeout(timeout)
 
       if (!response.ok && response.status >= 500 && attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, 800))
@@ -46,7 +43,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
 
       return response
     } catch (error: any) {
-      clearTimeout(timeout)
       lastError = error
       if (attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, 800))
