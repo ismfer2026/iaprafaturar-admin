@@ -8,7 +8,9 @@ export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const { t, locale, setLocale, localeOptions } = useI18n()
@@ -32,6 +34,35 @@ export function Login() {
         ? t('errors.invalid_credentials')
         : msg
       setError(translated)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccessMessage('')
+    setLoading(true)
+
+    try {
+      const { error: resetError } = await fetch('https://cbggntmqnulzdhpmying.supabase.co/auth/v1/recover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZ2dudG1xbnVsemRocG15aW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0Njk5MjUsImV4cCI6MjA4ODA0NTkyNX0.Ean-9TvMQaIoeJpO3VNwHt8ddwN8loj2C9lSa6uIcEM',
+        },
+        body: JSON.stringify({ email })
+      }).then(r => r.json())
+
+      if (resetError) {
+        setError(t('login.forgot_password_error'))
+      } else {
+        setSuccessMessage(t('login.forgot_password_sent'))
+        setEmail('')
+      }
+    } catch {
+      setError(t('login.forgot_password_error'))
     } finally {
       setLoading(false)
     }
@@ -98,72 +129,150 @@ export function Login() {
         </div>
 
         <div style={{ width: '100%', maxWidth: 360 }}>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1A1A2E', margin: '0 0 6px' }}>{t('login.title')}</h2>
-          <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 36px' }}>
-            {t('login.subtitle')}
-          </p>
+          {!showForgotPassword ? (
+            <>
+              <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1A1A2E', margin: '0 0 6px' }}>{t('login.title')}</h2>
+              <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 36px' }}>
+                {t('login.subtitle')}
+              </p>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder={t('login.email_placeholder')}
-                required
-                style={{
-                  width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-                  borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                  transition: 'border-color 0.2s',
-                }}
-                onFocus={e => e.target.style.borderColor = '#0D6E6E'}
-                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-              />
-            </div>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder={t('login.email_placeholder')}
+                    required
+                    style={{
+                      width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                      borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.password')}</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder={t('login.password_placeholder')}
-                required
-                style={{
-                  width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-                  borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                }}
-                onFocus={e => e.target.style.borderColor = '#0D6E6E'}
-                onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-              />
-            </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.password')}</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder={t('login.password_placeholder')}
+                    required
+                    style={{
+                      width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                      borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </div>
 
-            {error && (
-              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
-                {error}
-              </div>
-            )}
+                {error && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
+                    {error}
+                  </div>
+                )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
-                color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
-                borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'background 0.2s', marginTop: 4,
-              }}
-              onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
-              onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
-            >
-              {loading ? t('login.submitting') : t('login.submit')}
-            </button>
-          </form>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
+                    color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
+                    borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.2s', marginTop: 4,
+                  }}
+                  onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
+                  onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
+                >
+                  {loading ? t('login.submitting') : t('login.submit')}
+                </button>
+              </form>
 
-          <p style={{ marginTop: 32, textAlign: 'center', fontSize: 12, color: '#cbd5e1' }}>
-            {t('login.restricted')}
-          </p>
+              <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#0D6E6E' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotPassword(true); setError(''); setPassword('') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0D6E6E', fontWeight: 600, textDecoration: 'underline' }}
+                >
+                  {t('login.forgot_password_link')}
+                </button>
+              </p>
+
+              <p style={{ marginTop: 12, textAlign: 'center', fontSize: 12, color: '#cbd5e1' }}>
+                {t('login.restricted')}
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 style={{ fontSize: 26, fontWeight: 800, color: '#1A1A2E', margin: '0 0 6px' }}>{t('login.forgot_password_title')}</h2>
+              <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 36px' }}>
+                {t('login.forgot_password_subtitle')}
+              </p>
+
+              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder={t('login.forgot_password_placeholder')}
+                    required
+                    style={{
+                      width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                      borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s',
+                    }}
+                    onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </div>
+
+                {error && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
+                    {error}
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#15803d' }}>
+                    {successMessage}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
+                    color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
+                    borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.2s', marginTop: 4,
+                  }}
+                  onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
+                  onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
+                >
+                  {loading ? t('login.forgot_password_sending') : t('login.forgot_password_button')}
+                </button>
+              </form>
+
+              <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#0D6E6E' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotPassword(false); setError(''); setSuccessMessage('') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0D6E6E', fontWeight: 600, textDecoration: 'underline' }}
+                >
+                  {t('login.forgot_password_back')}
+                </button>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
