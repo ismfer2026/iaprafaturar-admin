@@ -63,6 +63,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'implicit',
+    storageKey: 'iap_admin_auth',
   },
   realtime: {
     params: {
