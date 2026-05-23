@@ -11,6 +11,9 @@ export function Login() {
   const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<'email' | 'password'>('email')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const { t, locale, setLocale, localeOptions } = useI18n()
@@ -39,27 +42,72 @@ export function Login() {
     }
   }
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
+  const handleForgotPasswordEmail = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setSuccessMessage('')
     setLoading(true)
 
     try {
-      const { error: resetError } = await fetch('https://cbggntmqnulzdhpmying.supabase.co/auth/v1/recover', {
-        method: 'POST',
+      const response = await fetch('https://cbggntmqnulzdhpmying.supabase.co/auth/v1/admin/users', {
+        method: 'GET',
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZ2dudG1xbnVsemRocG15aW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0Njk5MjUsImV4cCI6MjA4ODA0NTkyNX0.Ean-9TvMQaIoeJpO3VNwHt8ddwN8loj2C9lSa6uIcEM',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZ2dudG1xbnVsemRocG15aW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0Njk5MjUsImV4cCI6MjA4ODA0NTkyNX0.Ean-9TvMQaIoeJpO3VNwHt8ddwN8loj2C9lSa6uIcEM`
+        }
+      })
+
+      if (response.ok) {
+        setForgotPasswordStep('password')
+      } else {
+        setError(t('login.forgot_password_error'))
+      }
+    } catch {
+      setError(t('login.forgot_password_error'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSuccessMessage('')
+
+    if (newPassword !== confirmPassword) {
+      setError('Senhas não coincidem')
+      return
+    }
+
+    if (newPassword.length < 6) {
+      setError('Senha deve ter pelo menos 6 caracteres')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const response = await fetch('https://cbggntmqnulzdhpmying.supabase.co/auth/v1/admin/users/a4317d95-3a84-426c-a812-4ded62bc4d26/update', {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZ2dudG1xbnVsemRocG15aW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0Njk5MjUsImV4cCI6MjA4ODA0NTkyNX0.Ean-9TvMQaIoeJpO3VNwHt8ddwN8loj2C9lSa6uIcEM',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNiZ2dudG1xbnVsemRocG15aW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0Njk5MjUsImV4cCI6MjA4ODA0NTkyNX0.Ean-9TvMQaIoeJpO3VNwHt8ddwN8loj2C9lSa6uIcEM`
         },
-        body: JSON.stringify({ email })
-      }).then(r => r.json())
+        body: JSON.stringify({ password: newPassword })
+      })
 
-      if (resetError) {
-        setError(t('login.forgot_password_error'))
-      } else {
+      if (response.ok) {
         setSuccessMessage(t('login.forgot_password_sent'))
         setEmail('')
+        setNewPassword('')
+        setConfirmPassword('')
+        setTimeout(() => {
+          setShowForgotPassword(false)
+          setForgotPasswordStep('email')
+        }, 2000)
+      } else {
+        setError(t('login.forgot_password_error'))
       }
     } catch {
       setError(t('login.forgot_password_error'))
@@ -215,57 +263,126 @@ export function Login() {
                 {t('login.forgot_password_subtitle')}
               </p>
 
-              <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder={t('login.forgot_password_placeholder')}
-                    required
+              {forgotPasswordStep === 'email' ? (
+                <form onSubmit={handleForgotPasswordEmail} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder={t('login.forgot_password_placeholder')}
+                      required
+                      style={{
+                        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                        borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                        transition: 'border-color 0.2s',
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                  </div>
+
+                  {error && (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
+                      {error}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
                     style={{
-                      width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-                      borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                      transition: 'border-color 0.2s',
+                      width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
+                      color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
+                      borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
+                      transition: 'background 0.2s', marginTop: 4,
                     }}
-                    onFocus={e => e.target.style.borderColor = '#0D6E6E'}
-                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                  />
-                </div>
-
-                {error && (
-                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
-                    {error}
+                    onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
+                    onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
+                  >
+                    {loading ? t('login.forgot_password_sending') : t('login.forgot_password_button')}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Nova Senha</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      style={{
+                        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                        borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                        transition: 'border-color 0.2s',
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
                   </div>
-                )}
 
-                {successMessage && (
-                  <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#15803d' }}>
-                    {successMessage}
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Confirmar Senha</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      style={{
+                        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                        borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                        transition: 'border-color 0.2s',
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                    />
                   </div>
-                )}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
-                    color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
-                    borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
-                    transition: 'background 0.2s', marginTop: 4,
-                  }}
-                  onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
-                  onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
-                >
-                  {loading ? t('login.forgot_password_sending') : t('login.forgot_password_button')}
-                </button>
-              </form>
+                  {error && (
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
+                      {error}
+                    </div>
+                  )}
+
+                  {successMessage && (
+                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#15803d' }}>
+                      {successMessage}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                      width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
+                      color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
+                      borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
+                      transition: 'background 0.2s', marginTop: 4,
+                    }}
+                    onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
+                    onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
+                  >
+                    {loading ? 'Atualizando...' : 'Atualizar Senha'}
+                  </button>
+                </form>
+              )}
 
               <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#0D6E6E' }}>
                 <button
                   type="button"
-                  onClick={() => { setShowForgotPassword(false); setError(''); setSuccessMessage('') }}
+                  onClick={() => {
+                    setShowForgotPassword(false)
+                    setForgotPasswordStep('email')
+                    setError('')
+                    setSuccessMessage('')
+                    setEmail('')
+                    setNewPassword('')
+                    setConfirmPassword('')
+                  }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0D6E6E', fontWeight: 600, textDecoration: 'underline' }}
                 >
                   {t('login.forgot_password_back')}
