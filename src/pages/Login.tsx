@@ -26,7 +26,7 @@ export function Login() {
     setError('')
     setLoading(true)
 
-    const TIMEOUT_MS = 12000
+    const TIMEOUT_MS = 20000
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error(t('errors.timeout'))), TIMEOUT_MS)
     )
@@ -71,6 +71,7 @@ export function Login() {
     setLoading(true)
 
     try {
+      // Validar senha atual fazendo login
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: resetEmail,
         password: currentPassword,
@@ -82,15 +83,31 @@ export function Login() {
         return
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
+      // Fazer logout após validação
+      await supabase.auth.signOut()
 
-      if (updateError) {
-        setError('Erro ao atualizar senha')
+      // Chamar edge function para atualizar senha com service role
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email: resetEmail,
+            newPassword: newPassword,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Erro ao atualizar senha')
       } else {
         setSuccessMessage('Senha atualizada com sucesso!')
-        await supabase.auth.signOut()
         setTimeout(() => {
           setShowForgotPassword(false)
           setForgotPasswordStep('email')
@@ -98,10 +115,12 @@ export function Login() {
           setCurrentPassword('')
           setNewPassword('')
           setConfirmPassword('')
+          setEmail('')
+          setPassword('')
         }, 2000)
       }
-    } catch {
-      setError('Erro ao atualizar senha')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar senha')
     } finally {
       setLoading(false)
     }

@@ -63,7 +63,7 @@ export function Dashboard() {
     try {
       const { data: subs, error: subError } = await supabase
         .from('professional_subscriptions')
-        .select('status, plan_id, plans ( monthly_price, slug )');
+        .select('status, plan_id, plans ( price_monthly, slug )');
 
       if (subError) throw subError;
 
@@ -73,7 +73,7 @@ export function Dashboard() {
       const planCounts: Record<string, number> = {};
       
       activeSubs.forEach(sub => {
-        const price = (sub.plans as any)?.monthly_price || 0;
+        const price = (sub.plans as any)?.price_monthly || 0;
         const planName = (sub.plans as any)?.slug || (sub.plans as any)?.name || 'desconhecido';
 
         if (sub.status === 'active') mrr += price;
