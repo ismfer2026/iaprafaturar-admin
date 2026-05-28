@@ -27,12 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     // Escuta mudanças de auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setAdmin(null)
       } else if (event === 'SIGNED_IN') {
-        const currentAdmin = await getCurrentAdmin()
-        setAdmin(currentAdmin)
+        setTimeout(() => {
+          getCurrentAdmin()
+            .then(setAdmin)
+            .catch(() => setAdmin(null))
+        }, 0)
       }
     })
 
