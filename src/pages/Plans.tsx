@@ -9,8 +9,14 @@ import { useI18n } from '@/i18n'
 interface Plan {
   id: string; slug: string; name: string; description: string
   price_monthly: number; price_annual: number; is_active: boolean; is_featured: boolean
-  trial_days: number; max_professionals: number; max_patients: number
-  max_appointments_month: number; ai_credits_month: number; features: string[]
+  trial_days: number; max_users: number; max_clients: number; max_sessions_per_month: number
+  feature_agenda?: boolean; feature_clients?: boolean; feature_sessions?: boolean; feature_financial?: boolean
+  feature_products?: boolean; feature_reports?: boolean; feature_rfm?: boolean; feature_campaigns?: boolean
+  feature_funnels?: boolean; feature_indications?: boolean; feature_ai_agents?: boolean
+  feature_multi_agenda?: boolean; feature_team_management?: boolean
+  feature_consolidated_reports?: boolean; feature_shared_clients?: boolean; feature_admin_master?: boolean
+  sort_order?: number; badge_text?: string | null
+  ai_credits_month?: number | null
   subscribers_count?: number; mrr_contribution?: number
   created_at: string; updated_at: string
 }
@@ -35,8 +41,57 @@ interface Premissas {
 // ══════════════════════════════════════════════════════════
 const EMPTY_PLAN = {
   slug: '', name: '', description: '', price_monthly: 0, price_annual: 0,
-  is_active: true, is_featured: false, trial_days: 0, max_professionals: 1,
-  max_patients: -1, max_appointments_month: -1, ai_credits_month: 0, features:[],
+  is_active: true, is_featured: false, trial_days: 0, max_users: 1,
+  max_clients: 0, max_sessions_per_month: 0, sort_order: 0, badge_text: '', ai_credits_month: null,
+  feature_agenda: true, feature_clients: true, feature_sessions: true, feature_financial: false,
+  feature_products: false, feature_reports: false, feature_rfm: false, feature_campaigns: false,
+  feature_funnels: false, feature_indications: false, feature_ai_agents: false,
+  feature_multi_agenda: false, feature_team_management: false,
+  feature_consolidated_reports: false, feature_shared_clients: false, feature_admin_master: false,
+}
+
+const PLAN_FEATURES: Array<{ key: keyof Plan; label: string }> = [
+  { key: 'feature_agenda', label: 'Agenda' },
+  { key: 'feature_clients', label: 'Clientes' },
+  { key: 'feature_sessions', label: 'Sessoes' },
+  { key: 'feature_financial', label: 'Financeiro' },
+  { key: 'feature_products', label: 'Produtos' },
+  { key: 'feature_reports', label: 'Relatorios' },
+  { key: 'feature_rfm', label: 'RFM' },
+  { key: 'feature_campaigns', label: 'Campanhas' },
+  { key: 'feature_funnels', label: 'Funis' },
+  { key: 'feature_indications', label: 'Indicacoes' },
+  { key: 'feature_ai_agents', label: 'Agentes IA' },
+  { key: 'feature_multi_agenda', label: 'Multiagenda' },
+  { key: 'feature_team_management', label: 'Equipe' },
+  { key: 'feature_consolidated_reports', label: 'Relatorios consolidados' },
+  { key: 'feature_shared_clients', label: 'Clientes compartilhados' },
+  { key: 'feature_admin_master', label: 'Admin master' },
+]
+
+function getPlanFeatures(plan: Partial<Plan>) {
+  return PLAN_FEATURES.filter(feature => Boolean(plan[feature.key])).map(feature => feature.label)
+}
+
+function serializePlanForSave(plan: Partial<Plan>) {
+  const payload: Record<string, any> = {
+    slug: plan.slug,
+    name: plan.name,
+    description: plan.description ?? '',
+    price_monthly: Number(plan.price_monthly ?? 0),
+    price_annual: Number(plan.price_annual ?? 0),
+    max_users: Number(plan.max_users ?? 1),
+    max_clients: Number(plan.max_clients ?? 0),
+    max_sessions_per_month: Number(plan.max_sessions_per_month ?? 0),
+    trial_days: Number(plan.trial_days ?? 0),
+    is_active: Boolean(plan.is_active),
+    is_featured: Boolean(plan.is_featured),
+    sort_order: Number(plan.sort_order ?? 0),
+    badge_text: plan.badge_text?.trim() || null,
+    ai_credits_month: plan.ai_credits_month === null || plan.ai_credits_month === undefined ? null : Number(plan.ai_credits_month),
+  }
+  for (const feature of PLAN_FEATURES) payload[feature.key] = Boolean(plan[feature.key])
+  return payload
 }
 
 // Mapeamento tolerante para aceitar tanto os nomes antigos quanto os novos
@@ -336,50 +391,19 @@ export function PlansPage() {
   const [editingPlan, setEditingPlan] = useState<Partial<Plan> | null>(null)
   const [saving, setSaving] = useState(false)
   const[toggling, setToggling] = useState<string | null>(null)
-  const [newFeature, setNewFeature] = useState('') 
 
   useEffect(() => { fetchPlans() },[])
 
   const fetchPlans = async () => {
     setLoading(true)
     try {
-      console.log('📊 [Plans] Carregando planos...')
-
-      // 1. Busca os metadados dos planos (limites, preços configurados no banco)
-      const { data: plansData, error: plansError } = await supabase.from('plans').select('*')
-
-      if (plansError) {
-        console.error('❌ Erro ao buscar plans:', plansError)
-        throw plansError
-      }
-
-      console.log('✅ Plans carregado:', plansData?.length || 0, 'registros')
-      console.log('📋 Estrutura dos planos:', plansData?.[0])
-      if (!plansData) return
-
-      // 2. Conta assinaturas ativas por plan_id via professional_subscriptions
-      const { data: activeSubs } = await supabase
-        .from('professional_subscriptions')
-        .select('plan_id')
-        .eq('status', 'active')
-
-      const subsMap: Record<string, { count: number; mrr: number }> = {}
-
-      activeSubs?.forEach(sub => {
-        const plan = plansData.find(p => p.id === sub.plan_id)
-        if (plan) {
-          if (!subsMap[plan.id]) subsMap[plan.id] = { count: 0, mrr: 0 }
-          subsMap[plan.id].count++
-          subsMap[plan.id].mrr += plan.price_monthly || 0
-        }
+      const { data, error } = await supabase.functions.invoke('admin-plans', {
+        body: { action: 'list' },
       })
 
-      setPlans(plansData.map(p => ({ 
-        ...p, 
-        features: Array.isArray(p.features) ? p.features : [], 
-        subscribers_count: subsMap[p.id]?.count || 0, 
-        mrr_contribution: subsMap[p.id]?.mrr || 0 
-      })))
+      if (error) throw error
+      setPlans(data?.plans || [])
+      return
     } finally { setLoading(false) }
   }
 
@@ -418,7 +442,9 @@ export function PlansPage() {
     setToggling(plan.id)
     const newVal = !plan.is_active
     try {
-      const { error } = await supabase.from('plans').update({ is_active: newVal }).eq('id', plan.id)
+      const { error } = await supabase.functions.invoke('admin-plans', {
+        body: { action: 'toggle', id: plan.id, is_active: newVal },
+      })
       if (error) throw error
       setPlans(prev => prev.map(p => p.id === plan.id ? { ...p, is_active: newVal } : p))
       if (selectedPlan?.id === plan.id) setSelectedPlan({ ...selectedPlan, is_active: newVal })
@@ -438,10 +464,14 @@ export function PlansPage() {
     setSaving(true)
     try {
       if (editingPlan.id) {
-        const { error } = await supabase.from('plans').update({ ...editingPlan, updated_at: new Date().toISOString() }).eq('id', editingPlan.id)
+        const { error } = await supabase.functions.invoke('admin-plans', {
+          body: { action: 'save', id: editingPlan.id, plan: serializePlanForSave(editingPlan) },
+        })
         if (error) throw error
       } else {
-        const { error } = await supabase.from('plans').insert({ ...editingPlan })
+        const { error } = await supabase.functions.invoke('admin-plans', {
+          body: { action: 'save', plan: serializePlanForSave(editingPlan) },
+        })
         if (error) throw error
       }
       setShowModal(false); setEditingPlan(null); await fetchPlans()
@@ -579,8 +609,8 @@ export function PlansPage() {
                       {[
                         { label: 'Assinantes', value: plan.subscribers_count || 0 },
                         { label: 'MRR', value: fmtBRL(plan.mrr_contribution || 0) },
-                        { label: 'Créditos IA', value: plan.ai_credits_month === -1 ? '∞' : plan.ai_credits_month },
-                        { label: 'Pacientes', value: plan.max_patients === -1 ? '∞' : plan.max_patients },
+                        { label: 'Créditos IA', value: plan.ai_credits_month == null ? 'Manual' : plan.ai_credits_month.toLocaleString('pt-BR') },
+                        { label: 'Clientes', value: plan.max_clients === 0 ? '∞' : plan.max_clients },
                       ].map(({ label, value }) => (
                         <div key={label} style={{ textAlign: 'center' }}>
                           <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#94a3b8', margin: '0 0 2px' }}>{label}</p>
@@ -591,10 +621,10 @@ export function PlansPage() {
 
                     <div style={{ padding: '14px 24px' }}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                        {(plan.features ||[]).slice(0, 4).map((f, i) => (
+                        {getPlanFeatures(plan).slice(0, 4).map((f, i) => (
                           <span key={i} style={{ background: clr.bg, color: clr.color, fontSize: 11, padding: '3px 10px', borderRadius: 20, border: `1px solid ${clr.border}` }}>✓ {f}</span>
                         ))}
-                        {(plan.features ||[]).length > 4 && <span style={{ fontSize: 11, color: '#94a3b8' }}>+{plan.features.length - 4} mais</span>}
+                        {getPlanFeatures(plan).length > 4 && <span style={{ fontSize: 11, color: '#94a3b8' }}>+{getPlanFeatures(plan).length - 4} mais</span>}
                       </div>
                       <button onClick={() => selectPlan(plan)}
                         style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: clr.color, fontSize: 13, fontWeight: 600, padding: 0 }}>
@@ -660,14 +690,17 @@ export function PlansPage() {
                   { label: 'Preço Mensal (R$)', key: 'price_monthly', type: 'number', placeholder: '99.90' },
                   { label: 'Preço Anual (R$)', key: 'price_annual', type: 'number', placeholder: '990' },
                   { label: 'Dias de Trial', key: 'trial_days', type: 'number', placeholder: '7' },
-                  { label: 'Créditos IA/mês (-1=∞)', key: 'ai_credits_month', type: 'number', placeholder: '100' },
-                  { label: 'Máx. Profissionais', key: 'max_professionals', type: 'number', placeholder: '1' },
-                  { label: 'Máx. Pacientes (-1=∞)', key: 'max_patients', type: 'number', placeholder: '-1' },
+                  { label: 'Créditos IA/mês', key: 'ai_credits_month', type: 'number', placeholder: '1200' },
+                  { label: 'Máx. Usuários (0=∞)', key: 'max_users', type: 'number', placeholder: '1' },
+                  { label: 'Máx. Clientes (0=∞)', key: 'max_clients', type: 'number', placeholder: '0' },
+                  { label: 'Sessões/mês (0=∞)', key: 'max_sessions_per_month', type: 'number', placeholder: '0' },
+                  { label: 'Ordem', key: 'sort_order', type: 'number', placeholder: '1' },
+                  { label: 'Badge', key: 'badge_text', type: 'text', placeholder: 'Ex: Mais popular' },
                 ].map(({ label, key, type, placeholder }) => (
                   <div key={key}>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4 }}>{label}</label>
                     <input type={type} value={(editingPlan as any)[key] ?? ''} placeholder={placeholder}
-                      onChange={e => setEditingPlan(prev => ({ ...prev!, [key]: type === 'number' ? Number(e.target.value) : e.target.value }))}
+                      onChange={e => setEditingPlan(prev => ({ ...prev!, [key]: type === 'number' ? (e.target.value === '' ? null : Number(e.target.value)) : e.target.value }))}
                       style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
                   </div>
                 ))}
@@ -679,24 +712,14 @@ export function PlansPage() {
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box', resize: 'none' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Features incluídas</label>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                  <input value={newFeature} onChange={e => setNewFeature(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && newFeature.trim()) { setEditingPlan(prev => ({ ...prev!, features:[...(prev!.features || []), newFeature.trim()] })); (e.target as HTMLInputElement).value = ''; } }}
-                    placeholder={t('plans.modal_feature_placeholder')}
-                    style={{ flex: 1, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, outline: 'none' }} />
-                  <button onClick={() => { if (newFeature.trim()) setEditingPlan(prev => ({ ...prev!, features: [...(prev!.features || []), newFeature.trim()] })) }}
-                    style={{ padding: '8px 14px', background: '#0D6E6E', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}>
-                    <Plus size={16} />
-                  </button>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {(editingPlan.features ||[]).map((f, i) => (
-                    <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#f0fdfa', color: '#0D6E6E', fontSize: 12, padding: '4px 10px', borderRadius: 20, border: '1px solid #99f6e4' }}>
-                      {f}
-                      <button onClick={() => setEditingPlan(prev => ({ ...prev!, features: prev!.features!.filter((_, j) => j !== i) }))}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0, display: 'flex' }}><X size={12} /></button>
-                    </span>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Recursos incluídos</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {PLAN_FEATURES.map(feature => (
+                    <button key={String(feature.key)} onClick={() => setEditingPlan(prev => ({ ...prev!, [feature.key]: !Boolean(prev?.[feature.key]) }))}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 10px', borderRadius: 8, border: `1px solid ${editingPlan[feature.key] ? '#99f6e4' : '#e2e8f0'}`, background: editingPlan[feature.key] ? '#f0fdfa' : '#fff', color: editingPlan[feature.key] ? '#0D6E6E' : '#475569', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+                      <span>{feature.label}</span>
+                      {editingPlan[feature.key] ? <ToggleRight size={22} color="#0D6E6E" /> : <ToggleLeft size={22} color="#94a3b8" />}
+                    </button>
                   ))}
                 </div>
               </div>
