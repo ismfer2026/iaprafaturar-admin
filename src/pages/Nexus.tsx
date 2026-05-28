@@ -52,7 +52,7 @@ export function NexusPage() {
     setSending(true)
 
     try {
-      const { data, error } = await supabase.functions.invoke('nexus-orchestrator', {
+      const { data, error } = await supabase.functions.invoke('admin-ai-gateway', {
         body: { message: userMsg, admin_phone: 'ui-console' }
       })
 

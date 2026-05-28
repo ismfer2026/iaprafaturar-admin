@@ -1,214 +1,189 @@
 // @ts-nocheck
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-
-type Channel = "push_only" | "push_with_whatsapp_fallback" | "whatsapp_only"
-
-interface BroadcastRequest {
-  professional_ids: string[]
-  title: string
-  body: string
-  type: string
-  priority: number
-  channel?: Channel   // default: "push_only" (comportamento legado)
-}
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const APP_URL = "https://iaprafaturar.com.br"
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ONESIGNAL_APP_ID = Deno.env.get('ONESIGNAL_APP_ID') || ''
+const ONESIGNAL_REST_KEY = Deno.env.get('ONESIGNAL_REST_API_KEY') || ''
+const EVOLUTION_URL = (Deno.env.get('EVOLUTION_GO_URL') || '').replace(/\/$/, '')
+const EVOLUTION_KEY = Deno.env.get('EVOLUTION_GO_KEY') || ''
+const APP_URL = (Deno.env.get('APP_BASE_URL') || 'https://app.iaprafaturar.com.br').replace(/\/$/, '')
 
-async function sendWhatsAppSelfMessage(
-  instanceId: string,
-  phone: string,
-  title: string,
-  body: string,
-): Promise<boolean> {
-  const EVOLUTION_URL = (Deno.env.get("EVOLUTION_API_URL") || "").replace(/\/$/, "")
-  const EVOLUTION_KEY = Deno.env.get("EVOLUTION_API_KEY") || ""
-  if (!EVOLUTION_URL || !EVOLUTION_KEY || !instanceId || !phone) return false
+type Channel = 'push_only' | 'push_with_whatsapp_fallback' | 'whatsapp_only'
 
-  const clean = phone.replace(/\D/g, "")
-  const full  = clean.startsWith("55") ? clean : `55${clean}`
-  const text  = `🔔 *${title}*\n\n${body}\n\n_${APP_URL}_`
+async function requireActiveAdmin(req: Request, supabase: any): Promise<Response | null> {
+  const authHeader = req.headers.get('Authorization') || ''
+  const token = authHeader.replace(/^Bearer\s+/i, '')
 
+  if (!token) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(token)
+  if (userError || !userData.user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  const { data: admin, error: adminError } = await supabase
+    .from('master_admins')
+    .select('id')
+    .eq('user_id', userData.user.id)
+    .eq('is_active', true)
+    .single()
+
+  if (adminError || !admin) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  return null
+}
+
+async function sendPush(subscriptionId: string, title: string, body: string): Promise<boolean> {
+  if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_KEY) return false
   try {
-    const res = await fetch(`${EVOLUTION_URL}/message/sendText/${instanceId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: EVOLUTION_KEY },
-      body: JSON.stringify({ number: full, text, delay: 0 }),
+    const res = await fetch('https://onesignal.com/api/v1/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${ONESIGNAL_REST_KEY}`,
+      },
+      body: JSON.stringify({
+        app_id: ONESIGNAL_APP_ID,
+        include_subscription_ids: [subscriptionId],
+        headings: { en: title, pt: title, es: title },
+        contents: { en: body, pt: body, es: body },
+        large_icon: `${APP_URL}/icon-192x192.png`,
+        priority: 7,
+      }),
     })
     return res.ok
-  } catch {
+  } catch (e) {
+    console.error('[admin-broadcast] push error:', e)
+    return false
+  }
+}
+
+async function sendWhatsApp(instanceId: string, phone: string, title: string, body: string, instanceToken?: string): Promise<boolean> {
+  if (!EVOLUTION_URL || !instanceId || !phone) return false
+  const apikey = instanceToken || EVOLUTION_KEY
+  if (!apikey) return false
+  const clean = phone.replace(/\D/g, '')
+  const full = clean.startsWith('55') ? clean : `55${clean}`
+  const text = `*${title}*\n\n${body}`
+  try {
+    const res = await fetch(`${EVOLUTION_URL}/message/sendText/${instanceId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey },
+      body: JSON.stringify({ number: full, text, delay: 0 }),
+    })
+    console.log(`[admin-broadcast] WhatsApp ${instanceId} -> ${res.ok ? 'ok' : res.status}`)
+    return res.ok
+  } catch (e) {
+    console.error('[admin-broadcast] WhatsApp error:', e)
     return false
   }
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const body = (await req.json()) as BroadcastRequest
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
 
-    if (!body.professional_ids || !Array.isArray(body.professional_ids) || body.professional_ids.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "professional_ids must be a non-empty array" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+    const authResponse = await requireActiveAdmin(req, supabase)
+    if (authResponse) return authResponse
+
+    const { professional_ids, title, body, type = 'info', priority = 5, channel = 'push_only' } = await req.json() as {
+      professional_ids: string[]
+      title: string
+      body: string
+      type?: string
+      priority?: number
+      channel?: Channel
     }
 
-    if (!body.title || !body.body) {
-      return new Response(
-        JSON.stringify({ error: "title and body are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+    if (!professional_ids?.length || !title || !body) {
+      return new Response(JSON.stringify({ error: 'professional_ids, title and body are required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    const supabaseUrl     = Deno.env.get("SUPABASE_URL")
-    const serviceRoleKey  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
-    if (!supabaseUrl || !serviceRoleKey) throw new Error("Missing Supabase credentials")
-
-    const supabase    = createClient(supabaseUrl, serviceRoleKey)
-    const channel     = body.channel || "push_only"
     const broadcastId = crypto.randomUUID()
-    const now         = new Date().toISOString()
 
-    // ── 1. Salva notificações no histórico do app ───────────────────
-    const rows = body.professional_ids.map((prof_id) => ({
-      professional_id: prof_id,
-      category: "admin_broadcast",
-      title: body.title,
-      body:  body.body,
-      type:  body.type || "info",
-      priority: body.priority || 5,
-      data: { broadcast_id: broadcastId, channel },
-      created_at: now,
-      updated_at: now,
+    const [profsRes, tokensRes] = await Promise.all([
+      supabase
+        .from('professionals')
+        .select('id, phone_whatsapp, evolution_instance_id, evolution_instance_token')
+        .in('id', professional_ids),
+      supabase
+        .from('professional_push_tokens')
+        .select('professional_id, onesignal_id')
+        .in('professional_id', professional_ids),
+    ])
+
+    const profsMap = new Map((profsRes.data || []).map((p) => [p.id, p]))
+    const tokensMap = new Map((tokensRes.data || []).map((t) => [t.professional_id, t.onesignal_id]))
+
+    const notifications = professional_ids.map((id) => ({
+      professional_id: id,
+      type: 'sistema',
+      title,
+      body,
+      category: 'admin_broadcast',
+      is_read: false,
+      priority,
+      data: { broadcast_id: broadcastId, admin_type: type },
     }))
 
-    const { error: insertError } = await supabase.from("professional_notifications").insert(rows)
-    if (insertError) {
-      console.error("Insert error:", insertError)
-      throw insertError
-    }
+    const { error: insertError } = await supabase.from('professional_notifications').insert(notifications)
+    if (insertError) throw insertError
 
-    let pushedCount   = 0
-    let whatsappCount = 0
+    let pushed = 0
+    let whatsapp_sent = 0
 
-    // ── 2. Canal Push (OneSignal) ───────────────────────────────────
-    if (channel === "push_only" || channel === "push_with_whatsapp_fallback") {
-      const { data: tokens } = await supabase
-        .from("professional_push_tokens")
-        .select("professional_id, onesignal_id")
-        .in("professional_id", body.professional_ids)
+    await Promise.all(professional_ids.map(async (id) => {
+      const prof = profsMap.get(id)
+      const osId = tokensMap.get(id)
+      const hasPush = !!osId
+      const hasWA = !!prof?.evolution_instance_id && !!prof?.phone_whatsapp
 
-      const withToken    = tokens?.filter(t => t.onesignal_id) || []
-      const withoutToken = body.professional_ids.filter(
-        id => !withToken.some(t => t.professional_id === id)
-      )
-
-      // Envia push para quem tem token
-      if (withToken.length > 0) {
-        const onesignalAppId  = Deno.env.get("ONESIGNAL_APP_ID")
-        const onesignalRestKey = Deno.env.get("ONESIGNAL_REST_API_KEY")
-
-        if (onesignalAppId && onesignalRestKey) {
-          try {
-            const osRes = await fetch("https://onesignal.com/api/v1/notifications", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json; charset=utf-8",
-                Authorization: `Basic ${onesignalRestKey}`,
-              },
-              body: JSON.stringify({
-                app_id: onesignalAppId,
-                include_subscription_ids: withToken.map(t => t.onesignal_id),
-                headings: { en: body.title, pt: body.title, es: body.title },
-                contents: { en: body.body,  pt: body.body,  es: body.body  },
-                data: { broadcast_id: broadcastId, type: body.type },
-                priority: body.priority || 5,
-              }),
-            })
-
-            if (osRes.ok) {
-              pushedCount = withToken.length
-              console.log(`[admin-broadcast] OneSignal → ${pushedCount} subscribers`)
-            } else {
-              console.error("[admin-broadcast] OneSignal error:", await osRes.text())
-            }
-          } catch (e) {
-            console.error("[admin-broadcast] OneSignal request failed:", e)
-          }
-        }
+      if (channel === 'push_only') {
+        if (hasPush && await sendPush(osId, title, body)) pushed++
+      } else if (channel === 'whatsapp_only') {
+        if (hasWA && await sendWhatsApp(prof.evolution_instance_id, prof.phone_whatsapp, title, body, prof.evolution_instance_token)) whatsapp_sent++
+      } else if (channel === 'push_with_whatsapp_fallback') {
+        if (hasPush && await sendPush(osId, title, body)) pushed++
+        else if (hasWA && await sendWhatsApp(prof.evolution_instance_id, prof.phone_whatsapp, title, body, prof.evolution_instance_token)) whatsapp_sent++
       }
-
-      // Fallback WhatsApp para quem não tem push token
-      if (channel === "push_with_whatsapp_fallback" && withoutToken.length > 0) {
-        const { data: profData } = await supabase
-          .from("professionals")
-          .select("id, phone_whatsapp, evolution_instance_id")
-          .in("id", withoutToken)
-
-        for (const prof of profData || []) {
-          if (prof.evolution_instance_id && prof.phone_whatsapp) {
-            const sent = await sendWhatsAppSelfMessage(
-              prof.evolution_instance_id,
-              prof.phone_whatsapp,
-              body.title,
-              body.body,
-            )
-            if (sent) whatsappCount++
-          }
-        }
-
-        console.log(`[admin-broadcast] WhatsApp fallback → ${whatsappCount} enviados`)
-      }
-    }
-
-    // ── 3. Canal WhatsApp only ──────────────────────────────────────
-    if (channel === "whatsapp_only") {
-      const { data: profData } = await supabase
-        .from("professionals")
-        .select("id, phone_whatsapp, evolution_instance_id")
-        .in("id", body.professional_ids)
-
-      for (const prof of profData || []) {
-        if (prof.evolution_instance_id && prof.phone_whatsapp) {
-          const sent = await sendWhatsAppSelfMessage(
-            prof.evolution_instance_id,
-            prof.phone_whatsapp,
-            body.title,
-            body.body,
-          )
-          if (sent) whatsappCount++
-        }
-      }
-
-      console.log(`[admin-broadcast] WhatsApp only → ${whatsappCount} enviados`)
-    }
+    }))
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        broadcast_id: broadcastId,
-        channel,
-        inserted:       body.professional_ids.length,
-        pushed:         pushedCount,
-        whatsapp_sent:  whatsappCount,
-        no_token_count: body.professional_ids.length - pushedCount - whatsappCount,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ success: true, broadcast_id: broadcastId, pushed, whatsapp_sent, saved: professional_ids.length }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
-  } catch (error) {
-    console.error("[admin-broadcast] Function error:", error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+  } catch (e) {
+    console.error('[admin-broadcast] erro:', e)
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

@@ -38,7 +38,7 @@ function AppRoutes() {
 
       {/* Rotas Protegidas (Apenas Master Admin) */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/cadastro" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
+      <Route path="/onboarding-profissional" element={<ProtectedRoute><OnboardingPage /></ProtectedRoute>} />
       <Route path="/profissionais" element={<ProtectedRoute><ProfessionalsPage /></ProtectedRoute>} />
       <Route path="/planos" element={<ProtectedRoute><PlansPage /></ProtectedRoute>} />
       <Route path="/embaixadores" element={<ProtectedRoute><AmbassadorsPage /></ProtectedRoute>} />

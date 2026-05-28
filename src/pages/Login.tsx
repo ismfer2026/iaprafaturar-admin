@@ -12,11 +12,7 @@ export function Login() {
   const [successMessage, setSuccessMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [forgotPasswordStep, setForgotPasswordStep] = useState<'email' | 'credentials'>('email')
-  const [resetEmail, setResetEmail] = useState('')
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
   const { signIn } = useAuth()
   const navigate = useNavigate()
   const { t, locale, setLocale, localeOptions } = useI18n()
@@ -36,7 +32,7 @@ export function Login() {
       navigate('/dashboard')
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Credenciais inválidas'
-      const translated = msg === 'Credenciais inválidas ou acesso não autorizado'
+      const translated = msg === 'Credenciais invalidas ou acesso nao autorizado'
         ? t('errors.invalid_credentials')
         : msg
       setError(translated)
@@ -49,80 +45,33 @@ export function Login() {
     e.preventDefault()
     setError('')
     setSuccessMessage('')
-    setResetEmail(email)
-    setForgotPasswordStep('credentials')
-  }
 
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setSuccessMessage('')
-
-    if (newPassword !== confirmPassword) {
-      setError('Senhas não coincidem')
+    if (!email) {
+      setError('Insira seu email')
       return
     }
 
-    if (newPassword.length < 6) {
-      setError('Senha deve ter pelo menos 6 caracteres')
-      return
-    }
-
-    setLoading(true)
+    setResetLoading(true)
 
     try {
-      // Validar senha atual fazendo login
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: resetEmail,
-        password: currentPassword,
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
       })
 
-      if (signInError) {
-        setError('Senha atual incorreta')
-        setLoading(false)
-        return
-      }
-
-      // Fazer logout após validação
-      await supabase.auth.signOut()
-
-      // Chamar edge function para atualizar senha com service role
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-password`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            email: resetEmail,
-            newPassword: newPassword,
-          }),
-        }
-      )
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Erro ao atualizar senha')
+      if (error) {
+        setError(error.message)
       } else {
-        setSuccessMessage('Senha atualizada com sucesso!')
+        setSuccessMessage(t('login.forgot_password_sent'))
         setTimeout(() => {
           setShowForgotPassword(false)
-          setForgotPasswordStep('email')
-          setResetEmail('')
-          setCurrentPassword('')
-          setNewPassword('')
-          setConfirmPassword('')
           setEmail('')
           setPassword('')
-        }, 2000)
+        }, 3000)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao atualizar senha')
+      setError(err instanceof Error ? err.message : 'Erro ao enviar email')
     } finally {
-      setLoading(false)
+      setResetLoading(false)
     }
   }
 
@@ -273,138 +222,62 @@ export function Login() {
                 {t('login.forgot_password_subtitle')}
               </p>
 
-              {forgotPasswordStep === 'email' ? (
-                <form onSubmit={handleForgotPasswordEmail} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={e => setEmail(e.target.value)}
-                      placeholder={t('login.forgot_password_placeholder')}
-                      required
-                      style={{
-                        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-                        borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                        transition: 'border-color 0.2s',
-                      }}
-                      onFocus={e => e.target.style.borderColor = '#0D6E6E'}
-                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
+              <form onSubmit={handleForgotPasswordEmail} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>{t('login.email')}</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder={t('login.forgot_password_placeholder')}
+                    required
                     style={{
-                      width: '100%', padding: '12px', background: '#0D6E6E',
-                      color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
-                      borderRadius: 8, cursor: 'pointer',
-                      transition: 'background 0.2s', marginTop: 4,
+                      width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+                      borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
+                      transition: 'border-color 0.2s',
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
-                  >
-                    {t('login.forgot_password_button')}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Senha Atual</label>
-                    <input
-                      type="password"
-                      value={currentPassword}
-                      onChange={e => setCurrentPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      style={{
-                        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-                        borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                        transition: 'border-color 0.2s',
-                      }}
-                      onFocus={e => e.target.style.borderColor = '#0D6E6E'}
-                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                    />
+                    onFocus={e => e.target.style.borderColor = '#0D6E6E'}
+                    onBlur={e => e.target.style.borderColor = '#e2e8f0'}
+                  />
+                </div>
+
+                {error && (
+                  <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
+                    {error}
                   </div>
+                )}
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Nova Senha</label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      style={{
-                        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-                        borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                        transition: 'border-color 0.2s',
-                      }}
-                      onFocus={e => e.target.style.borderColor = '#0D6E6E'}
-                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                    />
+                {successMessage && (
+                  <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#15803d' }}>
+                    {successMessage}
                   </div>
+                )}
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Confirmar Nova Senha</label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      style={{
-                        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-                        borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box',
-                        transition: 'border-color 0.2s',
-                      }}
-                      onFocus={e => e.target.style.borderColor = '#0D6E6E'}
-                      onBlur={e => e.target.style.borderColor = '#e2e8f0'}
-                    />
-                  </div>
-
-                  {error && (
-                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#dc2626' }}>
-                      {error}
-                    </div>
-                  )}
-
-                  {successMessage && (
-                    <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#15803d' }}>
-                      {successMessage}
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                      width: '100%', padding: '12px', background: loading ? '#94a3b8' : '#0D6E6E',
-                      color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
-                      borderRadius: 8, cursor: loading ? 'not-allowed' : 'pointer',
-                      transition: 'background 0.2s', marginTop: 4,
-                    }}
-                    onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
-                    onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
-                  >
-                    {loading ? 'Atualizando...' : 'Atualizar Senha'}
-                  </button>
-                </form>
-              )}
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  style={{
+                    width: '100%', padding: '12px', background: resetLoading ? '#94a3b8' : '#0D6E6E',
+                    color: '#fff', fontWeight: 700, fontSize: 15, border: 'none',
+                    borderRadius: 8, cursor: resetLoading ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.2s', marginTop: 4,
+                  }}
+                  onMouseEnter={e => { if (!resetLoading) (e.currentTarget as HTMLButtonElement).style.background = '#094b4b' }}
+                  onMouseLeave={e => { if (!resetLoading) (e.currentTarget as HTMLButtonElement).style.background = '#0D6E6E' }}
+                >
+                  {resetLoading ? t('login.forgot_password_sending') : t('login.forgot_password_button')}
+                </button>
+              </form>
 
               <p style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: '#0D6E6E' }}>
                 <button
                   type="button"
                   onClick={() => {
                     setShowForgotPassword(false)
-                    setForgotPasswordStep('email')
                     setError('')
                     setSuccessMessage('')
                     setEmail('')
-                    setResetEmail('')
-                    setCurrentPassword('')
-                    setNewPassword('')
-                    setConfirmPassword('')
+                    setPassword('')
                   }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0D6E6E', fontWeight: 600, textDecoration: 'underline' }}
                 >

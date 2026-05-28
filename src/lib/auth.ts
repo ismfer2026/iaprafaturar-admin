@@ -20,12 +20,31 @@ export interface Admin {
   updated_at: string
 }
 
+const UNAUTHORIZED_MESSAGE = 'Credenciais invalidas ou acesso nao autorizado'
+
 const debugLog = (...args: unknown[]) => {
-  if (import.meta.env.DEV) console.log('🔐 [Auth]', ...args)
+  if (import.meta.env.DEV) console.log('[Auth]', ...args)
 }
 
 const debugError = (...args: unknown[]) => {
-  if (import.meta.env.DEV) console.error('❌ [Auth]', ...args)
+  if (import.meta.env.DEV) console.error('[Auth]', ...args)
+}
+
+const debugWarn = (...args: unknown[]) => {
+  if (import.meta.env.DEV) console.warn('[Auth]', ...args)
+}
+
+async function fetchCurrentAdmin(updateLastLogin = false): Promise<Admin | null> {
+  const { data, error } = await supabase.functions.invoke('get-current-admin', {
+    body: { update_last_login: updateLastLogin },
+  })
+
+  if (error) {
+    debugError('Erro ao validar admin:', error.message)
+    return null
+  }
+
+  return data?.admin ? data.admin as Admin : null
 }
 
 export async function signIn(email: string, password: string): Promise<Admin> {
@@ -36,50 +55,29 @@ export async function signIn(email: string, password: string): Promise<Admin> {
     password,
   })
 
-  if (authError) {
-    debugError('Erro de autenticação:', authError.message)
-    throw new Error('Credenciais inválidas ou acesso não autorizado')
+  if (authError || !authData.user) {
+    debugError('Erro de autenticacao:', authError?.message)
+    throw new Error(UNAUTHORIZED_MESSAGE)
   }
 
-  if (!authData.user) {
-    debugError('Nenhum usuário retornado')
-    throw new Error('Credenciais inválidas ou acesso não autorizado')
-  }
+  debugLog('Usuario autenticado:', authData.user.id)
 
-  debugLog('Usuário autenticado:', authData.user.id)
-
-  const { data: adminData, error: dbError } = await supabase
-    .from('master_admins')
-    .select('*')
-    .eq('user_id', authData.user.id)
-    .single()
-
-  if (dbError) {
-    debugError('Erro ao buscar admin no DB:', dbError.message)
-    await supabase.auth.signOut()
-    throw new Error('Credenciais inválidas ou acesso não autorizado')
-  }
+  const adminData = await fetchCurrentAdmin(true)
 
   if (!adminData) {
-    debugError('Admin não encontrado no banco de dados')
+    debugError('Admin nao encontrado no banco de dados')
     await supabase.auth.signOut()
-    throw new Error('Credenciais inválidas ou acesso não autorizado')
+    throw new Error(UNAUTHORIZED_MESSAGE)
   }
 
   if (!adminData.is_active) {
     debugError('Admin inativo')
     await supabase.auth.signOut()
-    throw new Error('Credenciais inválidas ou acesso não autorizado')
+    throw new Error(UNAUTHORIZED_MESSAGE)
   }
 
   debugLog('Admin autenticado com sucesso:', adminData.name)
-
-  await supabase
-    .from('master_admins')
-    .update({ last_login_at: new Date().toISOString() })
-    .eq('id', adminData.id)
-
-  return adminData as Admin
+  return adminData
 }
 
 export async function signOut(): Promise<void> {
@@ -94,30 +92,21 @@ export async function getCurrentAdmin(): Promise<Admin | null> {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
 
     if (sessionError) {
-      debugError('Erro ao buscar sessão:', sessionError.message)
+      debugError('Erro ao buscar sessao:', sessionError.message)
       return null
     }
 
     if (!sessionData.session) {
-      debugLog('Nenhuma sessão ativa')
+      debugLog('Nenhuma sessao ativa')
       return null
     }
 
-    debugLog('Sessão encontrada:', sessionData.session.user.id)
+    debugLog('Sessao encontrada:', sessionData.session.user.id)
 
-    const { data: adminData, error } = await supabase
-      .from('master_admins')
-      .select('*')
-      .eq('user_id', sessionData.session.user.id)
-      .single()
-
-    if (error) {
-      debugError('Erro ao buscar admin:', error.message)
-      return null
-    }
+    const adminData = await fetchCurrentAdmin(false)
 
     if (!adminData) {
-      debugError('Admin não encontrado')
+      debugError('Admin nao encontrado')
       return null
     }
 
@@ -127,15 +116,11 @@ export async function getCurrentAdmin(): Promise<Admin | null> {
     }
 
     debugLog('Admin carregado:', adminData.name)
-    return adminData as Admin
+    return adminData
   } catch (error) {
     debugError('Erro geral em getCurrentAdmin:', error)
     return null
   }
-}
-
-const debugWarn = (...args: unknown[]) => {
-  if (import.meta.env.DEV) console.warn('⚠️ [Auth]', ...args)
 }
 
 export async function onAuthStateChange(callback: (admin: Admin | null) => void) {

@@ -26,21 +26,16 @@ const normalizeHeaders = (headers?: HeadersInit): Record<string, string> => {
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
   const maxRetries = 1
   let lastError: Error | null = null
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, {
         ...options,
         headers: normalizeHeaders(options?.headers),
-        // Não substituir o signal original — o timeout é tratado no nível do componente
-        // via Promise.race. Adicionar AbortController aqui causava "signal aborted without reason".
       })
-
       if (!response.ok && response.status >= 500 && attempt < maxRetries) {
         await new Promise(resolve => setTimeout(resolve, 800))
         continue
       }
-
       return response
     } catch (error: any) {
       lastError = error
@@ -50,12 +45,12 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       }
     }
   }
-
   throw new Error(
     lastError?.message || 'Falha ao conectar ao Supabase. Verifique sua conexão de internet.'
   )
 }
 
+// Cliente normal — usado para login e operações autenticadas
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: typeof window !== 'undefined' ? localStorage : undefined,
@@ -74,3 +69,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     fetch: customFetch,
   },
 })
+
+// Cliente admin — usado para auth.admin.listUsers() e operações que exigem service_role
