@@ -11,8 +11,7 @@ interface AgentLog { agent_slug: string; conversations: number; credits_consumed
 interface Professional { id: string; name: string; business_name: string; email: string; created_at: string; status: string }
 
 // Link centralizado para facilitar manutenção
-const BASE_HEYFORM_URL = "https://form.israelmirandaoficial.cloud/form/nPOtAdol";
-const ADMIN_REGISTRATION_LINK = `${BASE_HEYFORM_URL}?ref=admin_direct`;
+const APP_PUBLIC_URL = "https://app.iaprafaturar.com.br";
 
 function KpiCard({ kpi }: { kpi: KPI }) {
   const isPos = kpi.isPositive;
@@ -40,7 +39,7 @@ function KpiCard({ kpi }: { kpi: KPI }) {
 }
 
 export function Dashboard() {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [kpiFinancial, setKpiFinancial] = useState<KPI[]>([])
   const [kpiUsers, setKpiUsers] = useState<KPI[]>([])
   const [planData, setPlanData] = useState<Plan[]>([])
@@ -162,6 +161,8 @@ export function Dashboard() {
     </div>
   )
 
+  const adminRegistrationLink = `${APP_PUBLIC_URL}/entrar?lang=${encodeURIComponent(locale)}`
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 36, paddingBottom: 40 }}>
 
@@ -171,7 +172,7 @@ export function Dashboard() {
       </div>
 
       {/* ===================================================================== */}
-      {/* 🚀 BANNER DO LINK DE VENDAS DIRETO DO ADMIN (ATUALIZADO PARA HEYFORM) */}
+      {/* Link de vendas direto do admin via onboarding publico do CRM/app */}
       {/* ===================================================================== */}
       <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: 12, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -181,18 +182,18 @@ export function Dashboard() {
           <div>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Link Oficial de Onboarding (Venda Direta)</p>
             <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748b', maxWidth: 600 }}>
-              Use este link para novos cadastros vindos do seu tráfego direto ou Bio. Este link possui rastreio interno (<code style={{color: '#0D6E6E'}}>ref=admin_direct</code>) para garantir o processamento correto via webhook.
+              Use este link para novos cadastros vindos do seu trafego direto ou Bio. Ele abre o onboarding publico do app usando apenas o idioma selecionado no painel.
             </p>
           </div>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <code style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px 16px', borderRadius: 8, fontSize: 12, color: '#0D6E6E', fontWeight: 700, userSelect: 'all', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '300px' }}>
-            {ADMIN_REGISTRATION_LINK}
+            {adminRegistrationLink}
           </code>
           <button
             onClick={() => {
-              navigator.clipboard.writeText(ADMIN_REGISTRATION_LINK);
+              navigator.clipboard.writeText(adminRegistrationLink);
               toast.success(t('dashboard.toast_link_copied'));
             }} 
             style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: 'all 0.2s' }}
@@ -203,11 +204,11 @@ export function Dashboard() {
             <Copy size={20} />
           </button>
           <button 
-            onClick={() => window.open(ADMIN_REGISTRATION_LINK, '_blank')} 
+            onClick={() => window.open(adminRegistrationLink, '_blank')} 
             style={{ background: '#fff', border: '1px solid #e2e8f0', padding: '10px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', transition: 'all 0.2s' }}
             onMouseOver={e => e.currentTarget.style.borderColor = '#0D6E6E'}
             onMouseOut={e => e.currentTarget.style.borderColor = '#e2e8f0'}
-            title="Abrir Formulário"
+            title="Abrir onboarding"
           >
             <ExternalLink size={20} />
           </button>
