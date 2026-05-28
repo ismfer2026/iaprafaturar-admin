@@ -4,14 +4,44 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const NERISSA_INTERNAL_TOKEN = Deno.env.get('NERISSA_INTERNAL_TOKEN') ?? ''
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
-const EVOLUTION_API_URL = Deno.env.get('EVOLUTION_API_URL') ?? ''
-const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY') ?? ''
+const EVOLUTION_API_URL = Deno.env.get('EVOLUTION_API_URL') ?? Deno.env.get('EVOLUTION_GO_URL') ?? ''
+const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY') ?? Deno.env.get('EVOLUTION_GO_KEY') ?? ''
 const EVOLUTION_INSTANCE = Deno.env.get('DEFAULT_WHATSAPP_INSTANCE') ?? 'default'
+
+function timingSafeEqual(a: string, b: string) {
+  if (!a || !b) return false
+  const encoder = new TextEncoder()
+  const left = encoder.encode(a)
+  const right = encoder.encode(b)
+  if (left.length !== right.length) return false
+
+  let diff = 0
+  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i]
+  return diff === 0
+}
+
+function isAuthorized(req: Request) {
+  const auth = req.headers.get('Authorization') ?? ''
+  const bearer = auth.replace(/^Bearer\s+/i, '')
+  const apikey = req.headers.get('apikey') ?? ''
+  const internalToken = req.headers.get('x-nerissa-internal-token') ?? ''
+
+  return (
+    timingSafeEqual(bearer, SUPABASE_SERVICE_ROLE_KEY) ||
+    timingSafeEqual(apikey, SUPABASE_SERVICE_ROLE_KEY) ||
+    (Boolean(NERISSA_INTERNAL_TOKEN) && timingSafeEqual(internalToken, NERISSA_INTERNAL_TOKEN))
+  )
+}
 
 serve(async (req) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
+  }
+
+  if (!isAuthorized(req)) {
+    return new Response('Unauthorized', { status: 401 })
   }
 
   let body: Record<string, unknown>
