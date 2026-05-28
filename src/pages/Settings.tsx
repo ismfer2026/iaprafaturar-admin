@@ -1,38 +1,205 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Save, Server, Eye, EyeOff, Lock, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
-import * as Sentry from '@sentry/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { useAuth } from '../hooks/useAuth';
-import { useI18n } from '@/i18n';
+import { useState, useEffect, type CSSProperties, type ReactNode } from 'react'
+import { supabase } from '@/lib/supabase'
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Lock,
+  Save,
+  Server,
+  ShieldCheck,
+  TestTube2,
+  XCircle,
+} from 'lucide-react'
+import * as Sentry from '@sentry/react'
+import { toast } from 'sonner'
+import { useAuth } from '../hooks/useAuth'
+import { useI18n } from '@/i18n'
+
+type FieldKey = 'evolution_api_url' | 'evolution_global_key' | 'master_instance_name'
+
+const page: CSSProperties = {
+  minHeight: 'calc(100vh - 72px)',
+  padding: '28px 32px 56px',
+  background: '#f6f8fb',
+}
+
+const shell: CSSProperties = {
+  maxWidth: 1180,
+  margin: '0 auto',
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) 320px',
+  gap: 20,
+  alignItems: 'start',
+}
+
+const panel: CSSProperties = {
+  background: '#fff',
+  border: '1px solid #dbe3ee',
+  borderRadius: 10,
+  boxShadow: '0 10px 28px rgba(15, 23, 42, 0.06)',
+  overflow: 'hidden',
+}
+
+const panelHeader: CSSProperties = {
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: 16,
+  padding: '18px 20px',
+  borderBottom: '1px solid #e8edf4',
+  background: '#fbfcfe',
+}
+
+const formGrid: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+  gap: 16,
+}
+
+const inputStyle: CSSProperties = {
+  width: '100%',
+  height: 42,
+  boxSizing: 'border-box',
+  border: '1px solid #cfd8e6',
+  borderRadius: 8,
+  background: '#fff',
+  color: '#0f172a',
+  fontSize: 14,
+  padding: '0 12px',
+  outline: 'none',
+}
+
+const mutedText: CSSProperties = {
+  color: '#64748b',
+  fontSize: 13,
+  lineHeight: 1.5,
+  margin: 0,
+}
+
+const primaryButton: CSSProperties = {
+  height: 40,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+  border: 'none',
+  borderRadius: 8,
+  background: '#0D6E6E',
+  color: '#fff',
+  fontSize: 14,
+  fontWeight: 800,
+  padding: '0 16px',
+  cursor: 'pointer',
+}
+
+const secondaryButton: CSSProperties = {
+  ...primaryButton,
+  background: '#0f172a',
+}
+
+const iconButton: CSSProperties = {
+  width: 42,
+  height: 42,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '1px solid #cfd8e6',
+  borderRadius: 8,
+  background: '#fff',
+  color: '#334155',
+  cursor: 'pointer',
+}
+
+function SectionTitle({
+  icon,
+  title,
+  subtitle,
+}: {
+  icon: ReactNode
+  title: string
+  subtitle: string
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <div style={{ width: 38, height: 38, borderRadius: 8, background: '#e8f5f5', color: '#0D6E6E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        {icon}
+      </div>
+      <div>
+        <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900, color: '#0f172a' }}>{title}</h2>
+        <p style={{ ...mutedText, marginTop: 3 }}>{subtitle}</p>
+      </div>
+    </div>
+  )
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: string
+  children: ReactNode
+}) {
+  return (
+    <div>
+      <label style={{ display: 'block', marginBottom: 6, color: '#334155', fontSize: 12, fontWeight: 800, textTransform: 'uppercase' }}>{label}</label>
+      {children}
+      {hint && <p style={{ ...mutedText, marginTop: 6, fontSize: 12 }}>{hint}</p>}
+    </div>
+  )
+}
+
+function StatusItem({
+  tone,
+  icon,
+  text,
+}: {
+  tone: 'good' | 'warn' | 'bad'
+  icon: ReactNode
+  text: string
+}) {
+  const colors = {
+    good: { bg: '#ecfdf5', border: '#bbf7d0', text: '#166534' },
+    warn: { bg: '#fffbeb', border: '#fde68a', text: '#92400e' },
+    bad: { bg: '#fef2f2', border: '#fecaca', text: '#991b1b' },
+  }[tone]
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 11px', borderRadius: 8, background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text, fontSize: 13, fontWeight: 700 }}>
+      {icon}
+      <span>{text}</span>
+    </div>
+  )
+}
 
 export default function SettingsPage() {
-  const { admin } = useAuth();
-  const { t } = useI18n();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [configId, setConfigId] = useState<string | null>(null);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { admin } = useAuth()
+  const { t } = useI18n()
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [configId, setConfigId] = useState<string | null>(null)
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
     newPassword: '',
-    confirmPassword: ''
-  });
+    confirmPassword: '',
+  })
 
   const [formData, setFormData] = useState({
     evolution_api_url: '',
     evolution_global_key: '',
-    master_instance_name: ''
-  });
+    master_instance_name: '',
+  })
 
   useEffect(() => {
-    fetchSettings();
-  },[]);
+    fetchSettings()
+  }, [])
 
   const fetchSettings = async () => {
     try {
@@ -40,28 +207,32 @@ export default function SettingsPage() {
         .from('platform_settings')
         .select('*')
         .limit(1)
-        .single();
+        .single()
 
-      if (error) throw error;
+      if (error) throw error
       if (data) {
-        setConfigId(data.id);
+        setConfigId(data.id)
         setFormData({
           evolution_api_url: data.evolution_api_url || '',
           evolution_global_key: data.evolution_global_key || '',
-          master_instance_name: data.master_instance_name || ''
-        });
+          master_instance_name: data.master_instance_name || '',
+        })
       }
     } catch (error) {
-      console.error('Erro ao buscar configurações globais:', error);
-      toast.error(t('settings.toast_config_load_error'));
+      console.error('Erro ao buscar configuracoes globais:', error)
+      toast.error(t('settings.toast_config_load_error'))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  const setField = (key: FieldKey, value: string) => {
+    setFormData(prev => ({ ...prev, [key]: value }))
+  }
 
   const handleSave = async () => {
-    if (!configId) return;
-    setSaving(true);
+    if (!configId) return
+    setSaving(true)
     try {
       const { error } = await supabase
         .from('platform_settings')
@@ -69,282 +240,251 @@ export default function SettingsPage() {
           evolution_api_url: formData.evolution_api_url,
           evolution_global_key: formData.evolution_global_key,
           master_instance_name: formData.master_instance_name,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', configId);
+        .eq('id', configId)
 
-      if (error) throw error;
-      toast.success(t('settings.toast_config_updated'));
+      if (error) throw error
+      toast.success(t('settings.toast_config_updated'))
     } catch (error) {
-      console.error('Erro ao salvar:', error);
-      toast.error(t('settings.toast_config_error'));
+      console.error('Erro ao salvar:', error)
+      toast.error(t('settings.toast_config_error'))
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const handleChangePassword = async () => {
     if (!passwordForm.newPassword.trim()) {
-      toast.error(t('settings.toast_password_empty'));
-      return;
+      toast.error(t('settings.toast_password_empty'))
+      return
     }
 
     if (passwordForm.newPassword.length < 6) {
-      toast.error(t('settings.toast_password_short'));
-      return;
+      toast.error(t('settings.toast_password_short'))
+      return
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error(t('settings.toast_password_mismatch'));
-      return;
+      toast.error(t('settings.toast_password_mismatch'))
+      return
     }
 
-    setChangingPassword(true);
+    setChangingPassword(true)
     try {
       const { error } = await supabase.auth.updateUser({
-        password: passwordForm.newPassword
-      });
+        password: passwordForm.newPassword,
+      })
 
-      if (error) throw error;
+      if (error) throw error
 
-      toast.success(t('settings.toast_password_updated'));
-      setPasswordForm({ newPassword: '', confirmPassword: '' });
+      toast.success(t('settings.toast_password_updated'))
+      setPasswordForm({ newPassword: '', confirmPassword: '' })
     } catch (error) {
-      console.error('Erro ao alterar senha:', error);
-      toast.error(t('settings.toast_password_error'));
+      console.error('Erro ao alterar senha:', error)
+      toast.error(t('settings.toast_password_error'))
     } finally {
-      setChangingPassword(false);
+      setChangingPassword(false)
     }
-  };
+  }
 
-  if (loading) return <div className="flex h-screen items-center justify-center"><div className="text-slate-500">{t('settings.loading')}</div></div>;
+  if (loading) {
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontWeight: 700 }}>
+        {t('settings.loading')}
+      </div>
+    )
+  }
+
+  const passwordsStarted = Boolean(passwordForm.newPassword || passwordForm.confirmPassword)
+  const passwordValid = passwordForm.newPassword.length >= 6
+  const passwordMatches = passwordForm.newPassword === passwordForm.confirmPassword && Boolean(passwordForm.confirmPassword)
+  const canChangePassword = passwordValid && passwordMatches && !changingPassword
 
   return (
-    <div className="pb-20">
-      {/* Header */}
-      <div className="mb-8 border-b border-slate-200 pb-6">
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">{t('settings.platform_title')}</h1>
-        <div className="flex items-center gap-2 text-slate-600">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
-          <span>Admin conectado: <span className="font-semibold text-slate-900">{admin?.name}</span></span>
+    <div style={page}>
+      <div style={{ maxWidth: 1180, margin: '0 auto 22px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20 }}>
+          <div>
+            <p style={{ margin: '0 0 6px', color: '#0D6E6E', fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }}>Admin Console</p>
+            <h1 style={{ margin: 0, color: '#0f172a', fontSize: 30, lineHeight: 1.1, fontWeight: 950 }}>{t('settings.platform_title')}</h1>
+            <p style={{ ...mutedText, marginTop: 8 }}>Credenciais da plataforma, segurança da conta e monitoramento.</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: '#fff', border: '1px solid #dbe3ee', borderRadius: 10 }}>
+            <div style={{ width: 9, height: 9, borderRadius: '50%', background: '#22c55e' }} />
+            <div>
+              <p style={{ margin: 0, color: '#64748b', fontSize: 11, fontWeight: 800, textTransform: 'uppercase' }}>Conectado como</p>
+              <p style={{ margin: 0, color: '#0f172a', fontSize: 14, fontWeight: 900 }}>{admin?.name || 'Admin'}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="space-y-6 max-w-4xl">
-
-        {/* Evolution API Section */}
-        <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="flex items-center gap-3 text-slate-900 text-lg">
-            <div className="p-2 bg-teal-100 rounded-lg">
-              <Server className="w-5 h-5 text-teal-700" />
-            </div>
-            Evolution API (WhatsApp)
-          </CardTitle>
-          <p className="text-sm text-slate-600 mt-1">Configurar integração com Evolution API para WhatsApp</p>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-5">
-          <div className="space-y-2.5">
-            <label htmlFor="url-api" className="text-sm font-semibold text-slate-700">
-              URL da API
-            </label>
-            <Input
-              id="url-api"
-              value={formData.evolution_api_url}
-              onChange={e => setFormData({...formData, evolution_api_url: e.target.value})}
-              placeholder="https://sua-api.evolution.ai"
-              className="bg-white border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
-            />
-            <p className="text-xs text-slate-500">Ex: https://evo.israel-miranda.cloud/manager/</p>
-          </div>
-
-          <div className="space-y-2.5">
-            <label htmlFor="global-key" className="text-sm font-semibold text-slate-700">
-              Chave Global
-            </label>
-            <div className="flex gap-2">
-              <Input
-                id="global-key"
-                type={showApiKey ? 'text' : 'password'}
-                value={formData.evolution_global_key}
-                onChange={e => setFormData({...formData, evolution_global_key: e.target.value})}
-                placeholder="••••••••••••••••"
-                className="bg-white border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 flex-1"
+      <div style={shell}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <section style={panel}>
+            <div style={panelHeader}>
+              <SectionTitle
+                icon={<Server size={19} />}
+                title="Evolution API"
+                subtitle="Motor de WhatsApp usado pelas rotinas administrativas."
               />
-              <button
-                onClick={() => setShowApiKey(!showApiKey)}
-                aria-label={showApiKey ? 'Ocultar' : 'Mostrar'}
-                className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition text-slate-600"
-              >
-                {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+              <button onClick={handleSave} disabled={saving} style={{ ...primaryButton, opacity: saving ? 0.65 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                <Save size={16} />
+                {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
-          </div>
-
-          <div className="space-y-2.5 pt-5 border-t border-slate-200">
-            <label htmlFor="instancia" className="text-sm font-semibold text-slate-700">
-              Nome da Instância Master
-            </label>
-            <Input
-              id="instancia"
-              value={formData.master_instance_name}
-              onChange={e => setFormData({...formData, master_instance_name: e.target.value})}
-              placeholder="instancia-master"
-              className="bg-white border border-slate-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-200"
-            />
-            <p className="text-xs text-slate-500">Nome único da instância no Evolution</p>
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <Button onClick={handleSave} disabled={saving} className="bg-teal-600 hover:bg-teal-700 text-white">
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? 'Salvando...' : 'Salvar Configurações'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Password Section */}
-      <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="flex items-center gap-3 text-slate-900 text-lg">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Lock className="w-5 h-5 text-blue-700" />
-            </div>
-            Alterar Senha
-          </CardTitle>
-          <p className="text-sm text-slate-600 mt-1">Atualize sua senha de administrador com segurança</p>
-        </CardHeader>
-        <CardContent className="pt-6 space-y-5">
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-900">
-              Você será desconectado após alterar a senha. A nova senha será usada no próximo acesso.
-            </p>
-          </div>
-
-          <div className="space-y-5">
-            {/* Nova Senha */}
-            <div className="space-y-2.5">
-              <label htmlFor="new-password" className="text-sm font-semibold text-slate-700">
-                Nova Senha
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  id="new-password"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={passwordForm.newPassword}
-                  onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
-                  placeholder="••••••••••••••••"
-                  className="bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 flex-1"
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <Field label="URL da API" hint="Ex: https://evo.israel-miranda.cloud/manager/">
+                <input
+                  value={formData.evolution_api_url}
+                  onChange={e => setField('evolution_api_url', e.target.value)}
+                  placeholder="https://sua-api.evolution.ai"
+                  style={inputStyle}
                 />
+              </Field>
+
+              <div style={formGrid}>
+                <Field label="Chave global">
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={formData.evolution_global_key}
+                      onChange={e => setField('evolution_global_key', e.target.value)}
+                      placeholder="Chave global da Evolution"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <button onClick={() => setShowApiKey(prev => !prev)} aria-label={showApiKey ? 'Ocultar chave' : 'Mostrar chave'} style={iconButton}>
+                      {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </Field>
+
+                <Field label="Instância master" hint="Nome único da instância no Evolution.">
+                  <input
+                    value={formData.master_instance_name}
+                    onChange={e => setField('master_instance_name', e.target.value)}
+                    placeholder="instancia-master"
+                    style={inputStyle}
+                  />
+                </Field>
+              </div>
+            </div>
+          </section>
+
+          <section style={panel}>
+            <div style={panelHeader}>
+              <SectionTitle
+                icon={<Lock size={19} />}
+                title="Alterar senha"
+                subtitle="Atualize a senha do administrador autenticado."
+              />
+            </div>
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', gap: 10, padding: 13, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8 }}>
+                <ShieldCheck size={18} color="#0D6E6E" style={{ flexShrink: 0, marginTop: 1 }} />
+                <p style={mutedText}>Você será desconectado após alterar a senha. A nova senha será usada no próximo acesso.</p>
+              </div>
+
+              <div style={formGrid}>
+                <Field label="Nova senha">
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      value={passwordForm.newPassword}
+                      onChange={e => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="Mínimo 6 caracteres"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <button onClick={() => setShowNewPassword(prev => !prev)} aria-label={showNewPassword ? 'Ocultar senha' : 'Mostrar senha'} style={iconButton}>
+                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </Field>
+
+                <Field label="Confirmar senha">
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={e => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && canChangePassword) handleChangePassword()
+                      }}
+                      placeholder="Repita a nova senha"
+                      style={{ ...inputStyle, flex: 1 }}
+                    />
+                    <button onClick={() => setShowConfirmPassword(prev => !prev)} aria-label={showConfirmPassword ? 'Ocultar senha' : 'Mostrar senha'} style={iconButton}>
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </Field>
+              </div>
+
+              {passwordsStarted && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+                  {passwordValid ? (
+                    <StatusItem tone="good" icon={<CheckCircle2 size={17} />} text="Comprimento adequado" />
+                  ) : (
+                    <StatusItem tone="warn" icon={<AlertCircle size={17} />} text="Mínimo 6 caracteres" />
+                  )}
+                  {passwordMatches ? (
+                    <StatusItem tone="good" icon={<CheckCircle2 size={17} />} text="Senhas coincidem" />
+                  ) : (
+                    <StatusItem tone="bad" icon={<XCircle size={17} />} text="Senhas não coincidem" />
+                  )}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  aria-label={showNewPassword ? 'Ocultar' : 'Mostrar'}
-                  className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition text-slate-600"
+                  onClick={handleChangePassword}
+                  disabled={!canChangePassword}
+                  style={{ ...secondaryButton, opacity: canChangePassword ? 1 : 0.45, cursor: canChangePassword ? 'pointer' : 'not-allowed' }}
                 >
-                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  <KeyRound size={16} />
+                  {changingPassword ? 'Alterando...' : 'Alterar senha'}
                 </button>
               </div>
             </div>
+          </section>
+        </div>
 
-            {/* Confirmar Senha */}
-            <div className="space-y-2.5">
-              <label htmlFor="confirm-password" className="text-sm font-semibold text-slate-700">
-                Confirmar Senha
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  id="confirm-password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={passwordForm.confirmPassword}
-                  onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
-                  placeholder="••••••••••••••••"
-                  className="bg-white border border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 flex-1"
-                  onKeyPress={e => e.key === 'Enter' && handleChangePassword()}
-                />
-                <button
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label={showConfirmPassword ? 'Ocultar' : 'Mostrar'}
-                  className="px-3 py-2 border border-slate-300 rounded bg-white hover:bg-slate-50 transition text-slate-600"
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <section style={panel}>
+            <div style={{ padding: 18 }}>
+              <SectionTitle
+                icon={<TestTube2 size={19} />}
+                title="Monitoramento"
+                subtitle="Envie um erro controlado para validar o Sentry."
+              />
+              <div style={{ marginTop: 16, padding: 13, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+                <p style={{ ...mutedText, color: '#92400e' }}>Este teste registra uma exception proposital no dashboard do Sentry.</p>
               </div>
-            </div>
-
-            {/* Validation Feedback */}
-            {passwordForm.newPassword || passwordForm.confirmPassword ? (
-              <div className="space-y-2">
-                {passwordForm.newPassword && passwordForm.newPassword.length >= 6 ? (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                    <CheckCircle2 size={18} />
-                    Comprimento adequado
-                  </div>
-                ) : passwordForm.newPassword ? (
-                  <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-700">
-                    <AlertCircle size={18} />
-                    Mínimo 6 caracteres
-                  </div>
-                ) : null}
-
-                {passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword ? (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                    <XCircle size={18} />
-                    As senhas não correspondem
-                  </div>
-                ) : passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword === passwordForm.confirmPassword && passwordForm.newPassword.length >= 6 ? (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                    <CheckCircle2 size={18} />
-                    Senhas coincidem
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {/* Button */}
-            <div className="flex justify-end pt-3">
-              <Button
-                onClick={handleChangePassword}
-                disabled={changingPassword || !passwordForm.newPassword || !passwordForm.confirmPassword || passwordForm.newPassword !== passwordForm.confirmPassword || passwordForm.newPassword.length < 6}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+              <button
+                onClick={() => {
+                  Sentry.captureException(new Error('Teste Sentry - erro proposital para validacao'))
+                  toast.success('Erro enviado para Sentry - verifique o dashboard')
+                }}
+                style={{ ...primaryButton, width: '100%', marginTop: 14, background: '#d97706' }}
               >
-                {changingPassword ? 'Alterando...' : 'Alterar Senha'}
-              </Button>
+                <TestTube2 size={16} />
+                Disparar erro de teste
+              </button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </section>
 
-      {/* Sentry Test Section */}
-      <Card className="border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-        <CardHeader className="border-b border-slate-100 bg-slate-50/50">
-          <CardTitle className="flex items-center gap-3 text-slate-900 text-lg">
-            <div className="p-2 bg-amber-100 rounded-lg">
-              <AlertCircle className="w-5 h-5 text-amber-700" />
+          <section style={{ ...panel, background: '#0f172a', borderColor: '#0f172a' }}>
+            <div style={{ padding: 18 }}>
+              <p style={{ margin: '0 0 6px', color: '#99f6e4', fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }}>Escopo</p>
+              <h3 style={{ margin: 0, color: '#fff', fontSize: 18, fontWeight: 900 }}>Configurações globais</h3>
+              <p style={{ margin: '10px 0 0', color: '#cbd5e1', fontSize: 13, lineHeight: 1.6 }}>
+                Alterações aqui afetam integrações administrativas da plataforma. Dados de profissionais e clientes continuam isolados no CRM.
+              </p>
             </div>
-            Teste de Monitoramento
-          </CardTitle>
-          <p className="text-sm text-slate-600 mt-1">Validar que o Sentry está capturando erros corretamente</p>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-5">
-            <p className="text-sm text-amber-900">
-              Clique no botão abaixo para disparar um erro de teste. Ele será registrado no dashboard do Sentry para validação.
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              Sentry.captureException(new Error('Teste Sentry - erro proposital para validação'));
-              toast.success('Erro enviado para Sentry - verifique o dashboard');
-            }}
-            className="bg-amber-600 hover:bg-amber-700 text-white"
-          >
-            🧪 Disparar Erro de Teste
-          </Button>
-        </CardContent>
-      </Card>
+          </section>
+        </aside>
       </div>
     </div>
-  );
+  )
 }
