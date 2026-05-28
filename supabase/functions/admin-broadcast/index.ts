@@ -16,6 +16,13 @@ const EVOLUTION_KEY = Deno.env.get('EVOLUTION_GO_KEY') || ''
 const APP_URL = (Deno.env.get('APP_BASE_URL') || 'https://app.iaprafaturar.com.br').replace(/\/$/, '')
 
 type Channel = 'push_only' | 'push_with_whatsapp_fallback' | 'whatsapp_only'
+type AdminBroadcastType = 'info' | 'alert' | 'warning' | 'success' | 'update'
+
+const VALID_ADMIN_TYPES = new Set<AdminBroadcastType>(['info', 'alert', 'warning', 'success', 'update'])
+
+function normalizeAdminType(value: string): AdminBroadcastType {
+  return VALID_ADMIN_TYPES.has(value as AdminBroadcastType) ? value as AdminBroadcastType : 'info'
+}
 
 async function requireActiveAdmin(req: Request, supabase: any): Promise<Response | null> {
   const authHeader = req.headers.get('Authorization') || ''
@@ -118,6 +125,7 @@ serve(async (req) => {
       priority?: number
       channel?: Channel
     }
+    const adminType = normalizeAdminType(type)
 
     if (!professional_ids?.length || !title || !body) {
       return new Response(JSON.stringify({ error: 'professional_ids, title and body are required' }), {
@@ -144,13 +152,13 @@ serve(async (req) => {
 
     const notifications = professional_ids.map((id) => ({
       professional_id: id,
-      type: 'sistema',
+      type: adminType,
       title,
       body,
       category: 'admin_broadcast',
       is_read: false,
       priority,
-      data: { broadcast_id: broadcastId, admin_type: type },
+      data: { broadcast_id: broadcastId, admin_type: adminType },
     }))
 
     const { error: insertError } = await supabase.from('professional_notifications').insert(notifications)

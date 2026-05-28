@@ -38,6 +38,14 @@ const TYPE_CONFIG_DEFAULTS: Record<NotifType, { color: string; bg: string; borde
   update:  { color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe', icon: Sparkles },
 }
 
+const NOTIF_TYPES: NotifType[] = ['info', 'alert', 'warning', 'success', 'update']
+
+function normalizeNotifType(value: unknown): NotifType {
+  return typeof value === 'string' && NOTIF_TYPES.includes(value as NotifType)
+    ? value as NotifType
+    : 'info'
+}
+
 export function NotificationsPage() {
   const { t } = useI18n()
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([])
@@ -150,7 +158,7 @@ export function NotificationsPage() {
           broadcast_id: (first.data as any)?.broadcast_id || first.id,
           title: first.title,
           body: first.body,
-          type: (first.type || 'info') as NotifType,
+          type: normalizeNotifType((first.data as any)?.admin_type || first.type),
           priority: first.priority || 5,
           recipient_count: rows.length,
           read_count: readCount,
