@@ -85,29 +85,16 @@ export function NotificationsPage() {
 
   const deleteOldBroadcasts = async (daysOld: number) => {
     try {
-      const cutoffDate = new Date()
-      cutoffDate.setDate(cutoffDate.getDate() - daysOld)
+      const { data, error } = await supabase.functions.invoke('admin-notifications', {
+        body: { action: 'delete_old', days_old: daysOld },
+      })
 
-      const { data: oldIds, error: selectError } = await supabase
-        .from('professional_notifications')
-        .select('id')
-        .eq('category', 'admin_broadcast')
-        .lt('created_at', cutoffDate.toISOString())
-
-      if (selectError) throw selectError
-      if (!oldIds || oldIds.length === 0) {
+      if (error) throw error
+      if (!data?.deleted) {
         toast.info(t('notifications.toast_clear_none', { days: daysOld }))
         return
       }
-
-      const { error: deleteError } = await supabase
-        .from('professional_notifications')
-        .delete()
-        .eq('category', 'admin_broadcast')
-        .lt('created_at', cutoffDate.toISOString())
-
-      if (deleteError) throw deleteError
-      toast.success(`${oldIds.length} ${t('notifications.toast_clear_success')}`)
+      toast.success(`${data.deleted} ${t('notifications.toast_clear_success')}`)
       await fetchAll()
     } catch (e) {
       console.error('Erro ao limpar:', e)
@@ -118,55 +105,17 @@ export function NotificationsPage() {
   const fetchAll = async () => {
     setLoading(true)
     try {
-      const { data: rows } = await supabase
-        .from('professional_notifications')
-        .select('id, title, body, type, priority, is_read, created_at, data')
-        .eq('category', 'admin_broadcast')
-        .order('created_at', { ascending: false })
-        .limit(500)
-
-      const { data: profs } = await supabase
-        .from('professionals')
-        .select('id, name, email')
-        .limit(200)
-
-      const { data: prefs } = await supabase
-        .from('notification_preferences')
-        .select('professional_id, push_enabled, whatsapp_enabled')
-
-      // Montar lista de profissionais com prefs
-      const prefsMap = new Map(prefs?.map(p => [p.professional_id, p]) || [])
-      const profsWithPrefs = (profs || []).map(p => ({
-        ...p,
-        push_enabled: prefsMap.get(p.id)?.push_enabled ?? true,
-        whatsapp_enabled: prefsMap.get(p.id)?.whatsapp_enabled ?? false,
-      }))
-      setProfessionals(profsWithPrefs)
-
-      // Agrupar por broadcast_id
-      const grouped = new Map<string, Array<any>>()
-      rows?.forEach(r => {
-        const broadcastId = (r.data as any)?.broadcast_id || r.id
-        if (!grouped.has(broadcastId)) grouped.set(broadcastId, [])
-        grouped.get(broadcastId)!.push(r)
+      const { data, error } = await supabase.functions.invoke('admin-notifications', {
+        body: { action: 'list' },
       })
 
-      const bcastList: Broadcast[] = Array.from(grouped.values()).map(rows => {
-        const first = rows[0]
-        const readCount = rows.filter(r => r.is_read).length
-        return {
-          broadcast_id: (first.data as any)?.broadcast_id || first.id,
-          title: first.title,
-          body: first.body,
-          type: normalizeNotifType((first.data as any)?.admin_type || first.type),
-          priority: first.priority || 5,
-          recipient_count: rows.length,
-          read_count: readCount,
-          sent_at: first.created_at,
-        }
-      })
+      if (error) throw error
 
-      setBroadcasts(bcastList)
+      setProfessionals(data?.professionals || [])
+      setBroadcasts((data?.broadcasts || []).map((broadcast: Broadcast) => ({
+        ...broadcast,
+        type: normalizeNotifType(broadcast.type),
+      })))
     } catch (e) {
       console.error('Erro ao buscar broadcasts:', e)
     } finally {

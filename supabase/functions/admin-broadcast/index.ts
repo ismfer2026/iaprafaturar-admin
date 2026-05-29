@@ -60,9 +60,10 @@ async function requireActiveAdmin(req: Request, supabase: any): Promise<Response
   return null
 }
 
-async function sendPush(subscriptionId: string, title: string, body: string): Promise<boolean> {
+async function sendPush(subscriptionId: string, title: string, body: string, notificationId: string, broadcastId: string): Promise<boolean> {
   if (!ONESIGNAL_APP_ID || !ONESIGNAL_REST_KEY) return false
   try {
+    const openUrl = `${APP_URL}/dashboard?notification_id=${encodeURIComponent(notificationId)}&broadcast_id=${encodeURIComponent(broadcastId)}`
     const res = await fetch('https://onesignal.com/api/v1/notifications', {
       method: 'POST',
       headers: {
@@ -75,7 +76,16 @@ async function sendPush(subscriptionId: string, title: string, body: string): Pr
         headings: { en: title, pt: title, es: title },
         contents: { en: body, pt: body, es: body },
         large_icon: `${APP_URL}/icon-192x192.png`,
-        priority: 7,
+        chrome_web_icon: `${APP_URL}/icon-192x192.png`,
+        chrome_web_badge: `${APP_URL}/icon-192x192.png`,
+        url: openUrl,
+        data: {
+          notification_id: notificationId,
+          broadcast_id: broadcastId,
+          category: 'admin_broadcast',
+          type: 'campaign_admin',
+        },
+        priority: 10,
       }),
     })
     return res.ok
@@ -152,17 +162,22 @@ serve(async (req) => {
 
     const notifications = professional_ids.map((id) => ({
       professional_id: id,
-      type: adminType,
+      type: 'campaign_admin',
       title,
       body,
       category: 'admin_broadcast',
       is_read: false,
       priority,
-      data: { broadcast_id: broadcastId, admin_type: adminType },
+      action_url: `/dashboard?broadcast_id=${encodeURIComponent(broadcastId)}`,
+      data: { broadcast_id: broadcastId, admin_type: adminType, channel, target_count: professional_ids.length },
     }))
 
-    const { error: insertError } = await supabase.from('professional_notifications').insert(notifications)
+    const { data: insertedNotifications, error: insertError } = await supabase
+      .from('professional_notifications')
+      .insert(notifications)
+      .select('id, professional_id')
     if (insertError) throw insertError
+    const notificationIdByProfessional = new Map((insertedNotifications || []).map((n) => [n.professional_id, n.id]))
 
     let pushed = 0
     let whatsapp_sent = 0
@@ -174,11 +189,13 @@ serve(async (req) => {
       const hasWA = !!prof?.evolution_instance_id && !!prof?.phone_whatsapp
 
       if (channel === 'push_only') {
-        if (hasPush && await sendPush(osId, title, body)) pushed++
+        const notificationId = notificationIdByProfessional.get(id)
+        if (hasPush && notificationId && await sendPush(osId, title, body, notificationId, broadcastId)) pushed++
       } else if (channel === 'whatsapp_only') {
         if (hasWA && await sendWhatsApp(prof.evolution_instance_id, prof.phone_whatsapp, title, body, prof.evolution_instance_token)) whatsapp_sent++
       } else if (channel === 'push_with_whatsapp_fallback') {
-        if (hasPush && await sendPush(osId, title, body)) pushed++
+        const notificationId = notificationIdByProfessional.get(id)
+        if (hasPush && notificationId && await sendPush(osId, title, body, notificationId, broadcastId)) pushed++
         else if (hasWA && await sendWhatsApp(prof.evolution_instance_id, prof.phone_whatsapp, title, body, prof.evolution_instance_token)) whatsapp_sent++
       }
     }))
